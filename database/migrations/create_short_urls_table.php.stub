@@ -1,0 +1,109 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        $table = config('short-url.table_prefix', 'short_url_').'urls';
+
+        Schema::create($table, function (Blueprint $table) {
+            $table->id();
+            $table->uuid('uuid')->unique();
+
+            $table->unsignedBigInteger('tenant_id')->nullable();
+            $table->unsignedBigInteger('team_id')->nullable();
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->unsignedBigInteger('folder_id')->nullable();
+            $table->unsignedBigInteger('custom_domain_id')->nullable();
+
+            $table->string('url_key', 64);
+            $table->text('destination_url');
+            $table->string('destination_type')->default('single'); // single|split|rules|geo_fence — validated at app layer
+
+            $table->string('title')->nullable();
+            $table->text('notes')->nullable();
+            $table->string('internal_ref')->nullable();
+
+            $table->boolean('is_enabled')->default(true);
+            $table->unsignedSmallInteger('redirect_status_code')->default(302);
+            $table->boolean('single_use')->default(false);
+            $table->boolean('forward_query_params')->default(true);
+            $table->boolean('strip_utm_from_destination')->default(false);
+
+            $table->unsignedBigInteger('max_visits')->nullable();
+            $table->unsignedBigInteger('total_visits')->default(0);
+            $table->unsignedBigInteger('unique_visits')->default(0);
+            $table->unsignedBigInteger('qr_scans')->default(0);
+            $table->unsignedBigInteger('bot_visits')->default(0);
+
+            $table->timestamp('activated_at')->nullable();
+            $table->timestamp('expires_at')->nullable();
+            $table->timestamp('deactivated_at')->nullable();
+            $table->string('expiration_redirect_url')->nullable();
+
+            $table->string('password_hash')->nullable();
+            $table->string('password_hint')->nullable();
+
+            $table->boolean('show_warning_page')->default(false);
+            $table->text('warning_message')->nullable();
+
+            $table->boolean('auto_open_app_mobile')->default(false);
+            $table->string('app_scheme_override')->nullable();
+
+            $table->string('ga_tracking_id')->nullable();
+            $table->string('ga_api_secret_override')->nullable();
+
+            $table->string('webhook_url')->nullable();
+            $table->string('webhook_secret')->nullable();
+
+            $table->json('targeting_rules')->nullable();
+            $table->json('rotation_variants')->nullable();
+            $table->json('geo_fence')->nullable();
+
+            $table->string('utm_source')->nullable();
+            $table->string('utm_medium')->nullable();
+            $table->string('utm_campaign')->nullable();
+            $table->string('utm_term')->nullable();
+            $table->string('utm_content')->nullable();
+
+            $table->string('og_title')->nullable();
+            $table->text('og_description')->nullable();
+            $table->string('og_image_path')->nullable();
+
+            $table->json('qr_design')->nullable();
+
+            $table->string('safe_browsing_status')->nullable();
+            $table->timestamp('safe_browsing_checked_at')->nullable();
+
+            $table->boolean('track_visits')->default(true);
+            $table->boolean('track_ip_address')->default(true);
+            $table->boolean('track_browser')->default(true);
+            $table->boolean('track_browser_version')->default(true);
+            $table->boolean('track_operating_system')->default(true);
+            $table->boolean('track_operating_system_version')->default(true);
+            $table->boolean('track_device_type')->default(true);
+            $table->boolean('track_referer_url')->default(true);
+            $table->boolean('track_browser_language')->default(true);
+
+            $table->timestamp('last_visited_at')->nullable();
+            $table->timestamp('archived_at')->nullable();
+
+            $table->timestamps();
+            $table->softDeletes();
+
+            $table->unique(['custom_domain_id', 'url_key']);
+            $table->index(['tenant_id', 'created_at']);
+            $table->index('folder_id');
+            $table->index(['is_enabled', 'expires_at']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists(config('short-url.table_prefix', 'short_url_').'urls');
+    }
+};
