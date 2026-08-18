@@ -57,9 +57,31 @@ $link = ShortUrl::destination('https://example.com/product')
 
 // Resolve
 $link = ShortUrl::resolve('promo25');
+
+// The ready-to-share URL — custom domain when set, otherwise the app's own host
+$link->fullUrl(); // https://short.test/promo25
 ```
 
 Redirecting itself needs no extra code: any request to `GET /{urlKey}` already flows through the full pipeline.
+
+## Campaign tagging (UTM)
+
+Every link can carry its own `utm_source`/`utm_medium`/`utm_campaign`/`utm_term`/`utm_content` — set directly, or from a reusable, tenant-scoped `UtmTemplate` ("campaign"):
+
+```php
+use JeffersonGoncalves\LaravelShortUrl\Models\UtmTemplate;
+
+$campaign = UtmTemplate::create(['name' => 'Spring SMS', 'utm_medium' => 'sms', 'utm_campaign' => 'spring-sale']);
+
+$link = ShortUrl::destination('https://example.com/product')
+    ->utmTemplate($campaign->id)   // fills in unset utm_* fields from the template
+    ->utm(['utm_source' => 'agent-42']) // explicit values always win over the template
+    ->create();
+```
+
+These values are attached to the destination URL on redirect (see `strip_utm_from_destination` to drop the click's own incoming `utm_*` first) and become the default attribution recorded on the visit whenever the click itself carries no `utm_*` of its own — so a link generated specifically for SMS is still correctly attributed even if whoever forwards it doesn't append query params by hand.
+
+Set `short-url.utm.required` (e.g. `['utm_medium']`) to make `ShortUrlManager` reject creating — or updating — a link that doesn't declare those fields, directly or via a template. Enforced everywhere a link is created (facade, builder, REST API, CSV/Bitly import), not just at the API layer.
 
 ## Destination types
 
@@ -109,19 +131,19 @@ Each stage can short-circuit by returning a `Response` directly (wrong password,
 | Area | Description |
 | --- | --- |
 | **Redirecting** | Configurable Base62 keys, blacklist, uniqueness per domain, `301\|302\|307\|308`, `single_use`, `max_visits`, expiration with a fallback redirect. |
-| **Analytics** | Asynchronous visit tracking (`TrackShortUrlVisitJob`), fast-path UA parsing, GeoIP (CDN headers / MaxMind / ip-api), bot detection, IP anonymization (IPv4 /24, IPv6 /48), daily aggregation with configurable retention. |
+| **Analytics** | Asynchronous visit tracking (`TrackShortUrlVisitJob`), fast-path UA parsing, GeoIP (CDN headers / MaxMind / ip-api), bot detection, IP anonymization (IPv4 /24, IPv6 /48), daily aggregation with configurable retention. `StatsAggregator` breaks visits down by UTM source/medium/campaign, device, browser, OS, country, referer, and more. |
 | **Targeting** | Nested `and\|or` rules by device, platform, browser, country, language, referer, UTM, date/time window, visit count, VPN, bot. Weighted A/B rotation with statistical significance (Z-test). |
 | **Custom domains** | DNS verification (TXT/CNAME/A), per-domain routing, wildcard support, root redirect. |
 | **Security** | Bcrypt password protection, signed-token warning page, Google Safe Browsing (sync or async blocking), VPN/proxy detection (flag or 403 block), rate limiting, full audit trail (before/after). |
 | **Compliance** | Configurable retention (package-wide or per tenant plan), per-subject data export/deletion (LGPD/GDPR), analytics-only mode (no PII stored). |
-| **REST API** | `/api/short-url/v1` (disabled by default), API-key auth with abilities, per-key rate limiting, link CRUD, bulk create (up to 500), stats, visits, domains, webhooks, conversions. |
+| **REST API** | `/api/short-url/v1` (disabled by default), API-key auth with abilities, per-key rate limiting, link CRUD (accepts and returns `custom_domain_id`, `utm_*`, `utm_template_id`, and a ready-to-use `short_url`), bulk create (up to 500), stats, visits, domains, webhooks, conversions. |
 | **Webhooks** | HMAC-SHA256 + anti-replay timestamp, retries at 10s/60s/300s, manual replay, auto-disable after consecutive failures. |
 | **External analytics** | GA4, Plausible, PostHog, Matomo, Umami, Mixpanel, and Segment built in; `AnalyticsDriverRegistry::extend()` to add any other provider. |
 | **Conversion tracking** | Server-to-server forwarding to Meta CAPI, Google Enhanced Conversions, TikTok Events API, and LinkedIn CAPI on `POST /conversions`. |
 | **Alerts** | Z-score anomaly detection against a 7-day baseline, notifications via mail, database, broadcast, Slack, Discord, Telegram, Teams. |
 | **QR codes** | SVG/PNG/PDF/EPS export (via the optional `endroid/qr-code`), scan tracking (`?source=qr`). |
 | **Deep links & pixels** | Mobile app opening via custom URL scheme, 10 pre-registered apps, optional AASA/assetlinks serving, retargeting pixels (Meta, Google Ads, TikTok, GA4) with an optional consent banner. |
-| **Organization** | Hierarchical folders, tags, UTM templates, archiving. |
+| **Organization** | Hierarchical folders, tags, reusable UTM templates ("campaigns"), archiving. |
 | **Import/Export** | Built-in CSV importer, Bitly API v4 as the reference per-provider importer, CSV export via the API. |
 | **ClickHouse** | Alternative `VisitRepository` driver over ClickHouse's native HTTP interface — same contract, no client library dependency. |
 | **Multi-tenancy** | Fully feature-flagged. Auto-scoped via `stancl/tenancy` when installed, or a manual config override. Configurable plan limits (`links_per_month`, `domains`, `retention_days`). |

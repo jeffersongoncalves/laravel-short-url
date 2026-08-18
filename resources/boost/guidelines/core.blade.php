@@ -39,6 +39,19 @@ $link = ShortUrl::destination('https://example.com/product')
 @endverbatim
 
 @verbatim
+<code-snippet name="Campaign tagging via UTM template" lang="php">
+use JeffersonGoncalves\LaravelShortUrl\Models\UtmTemplate;
+
+$campaign = UtmTemplate::create(['name' => 'Spring SMS', 'utm_medium' => 'sms']);
+
+$link = ShortUrl::destination('https://example.com/product')
+    ->utmTemplate($campaign->id)        // fills in unset utm_* fields
+    ->utm(['utm_source' => 'agent-42']) // explicit values always win
+    ->create();
+</code-snippet>
+@endverbatim
+
+@verbatim
 <code-snippet name="Split (A/B) and rules destinations" lang="php">
 ShortUrl::create([
     'destination_url' => 'https://example.com/base',
@@ -80,7 +93,11 @@ Built-in analytics drivers: GA4, Plausible, PostHog, Matomo, Umami, Mixpanel, Se
 
 ### REST API
 
-Disabled by default (`short-url.api`). API-key auth with per-key abilities (`links:read`, `links:write`, `conversions:write`, ...). Base path `/api/short-url/v1`: `links` (CRUD, bulk create up to 500), `links/{uuid}/stats`, `links/{uuid}/visits`, `domains`, `webhooks`, `conversions`, `export/csv`.
+Disabled by default (`short-url.api`). API-key auth with per-key abilities (`links:read`, `links:write`, `conversions:write`, ...). Base path `/api/short-url/v1`: `links` (CRUD, bulk create up to 500), `links/{uuid}/stats`, `links/{uuid}/visits`, `domains`, `webhooks`, `conversions`, `export/csv`. `links` accepts and returns `custom_domain_id`, `utm_source`/`utm_medium`/`utm_campaign`/`utm_term`/`utm_content`, `utm_template_id`, and a ready-to-use `short_url`.
+
+### Required UTM Enforcement
+
+`short-url.utm.required` (e.g. `['utm_medium']`) makes `ShortUrlManager` reject creating/updating a link that doesn't declare those fields — enforced once in the manager, so it's uniform across the facade, builder, REST API, and every importer.
 
 ### Events
 

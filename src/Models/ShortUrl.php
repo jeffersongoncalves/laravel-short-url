@@ -167,6 +167,33 @@ class ShortUrl extends Model
     }
 
     /**
+     * The ready-to-share short link — custom domain (verified, via
+     * custom_domain_id) when set, otherwise the app's own host.
+     */
+    public function fullUrl(): string
+    {
+        $customDomain = $this->custom_domain_id
+            ? CustomDomain::query()->find($this->custom_domain_id)?->domain
+            : null;
+        $routeDomain = config('short-url.route.domain');
+
+        if ($customDomain || $routeDomain) {
+            // A dedicated short-link host — its own config, not app.url's —
+            // is always assumed to be TLS.
+            $host = $customDomain ?? $routeDomain;
+            $scheme = 'https';
+        } else {
+            $appUrl = (string) config('app.url');
+            $host = parse_url($appUrl, PHP_URL_HOST) ?? 'localhost';
+            $scheme = (string) (parse_url($appUrl, PHP_URL_SCHEME) ?? 'https');
+        }
+
+        $prefix = trim((string) config('short-url.route.prefix'), '/');
+
+        return rtrim("{$scheme}://{$host}", '/').($prefix !== '' ? "/{$prefix}" : '').'/'.$this->url_key;
+    }
+
+    /**
      * @return BelongsTo<CustomDomain, $this>
      */
     public function customDomain(): BelongsTo

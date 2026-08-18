@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Hash;
 use JeffersonGoncalves\LaravelShortUrl\Exceptions\PlanLimitExceeded;
+use JeffersonGoncalves\LaravelShortUrl\Exceptions\RequiredUtmParameterMissing;
 use JeffersonGoncalves\LaravelShortUrl\Http\Resources\ShortUrlResource;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 use JeffersonGoncalves\LaravelShortUrl\ShortUrlManager;
@@ -38,16 +39,28 @@ class LinkController
             return (new ShortUrlResource($manager->create($data)))->response()->setStatusCode(201);
         } catch (PlanLimitExceeded $e) {
             return response()->json(['error' => ['code' => 'plan_limit_exceeded', 'message' => $e->getMessage()]], 403);
+        } catch (RequiredUtmParameterMissing $e) {
+            return response()->json(['error' => ['code' => 'required_utm_parameter_missing', 'message' => $e->getMessage()]], 422);
         }
     }
 
     public function bulkStore(Request $request, ShortUrlManager $manager): JsonResponse
     {
+        $customDomainsTable = config('short-url.table_prefix', 'short_url_').'custom_domains';
+        $utmTemplatesTable = config('short-url.table_prefix', 'short_url_').'utm_templates';
+
         $data = $request->validate([
             'links' => ['required', 'array', 'min:1', 'max:500'],
             'links.*.destination_url' => ['required', 'url'],
             'links.*.url_key' => ['nullable', 'string', 'max:64'],
             'links.*.title' => ['nullable', 'string', 'max:255'],
+            'links.*.custom_domain_id' => ['nullable', 'integer', 'exists:'.$customDomainsTable.',id'],
+            'links.*.utm_source' => ['nullable', 'string', 'max:255'],
+            'links.*.utm_medium' => ['nullable', 'string', 'max:255'],
+            'links.*.utm_campaign' => ['nullable', 'string', 'max:255'],
+            'links.*.utm_term' => ['nullable', 'string', 'max:255'],
+            'links.*.utm_content' => ['nullable', 'string', 'max:255'],
+            'links.*.utm_template_id' => ['nullable', 'integer', 'exists:'.$utmTemplatesTable.',id'],
         ]);
 
         $created = [];
@@ -69,12 +82,15 @@ class LinkController
         return new ShortUrlResource($shortUrl);
     }
 
-    public function update(Request $request, ShortUrl $shortUrl): ShortUrlResource
+    public function update(Request $request, ShortUrl $shortUrl, ShortUrlManager $manager): ShortUrlResource|JsonResponse
     {
         $data = $this->hashPassword($request->validate($this->rules(update: true)));
-        $shortUrl->update($data);
 
-        return new ShortUrlResource($shortUrl);
+        try {
+            return new ShortUrlResource($manager->update($shortUrl, $data));
+        } catch (RequiredUtmParameterMissing $e) {
+            return response()->json(['error' => ['code' => 'required_utm_parameter_missing', 'message' => $e->getMessage()]], 422);
+        }
     }
 
     public function destroy(ShortUrl $shortUrl): JsonResponse
@@ -96,6 +112,9 @@ class LinkController
      */
     protected function rules(bool $update = false): array
     {
+        $customDomainsTable = config('short-url.table_prefix', 'short_url_').'custom_domains';
+        $utmTemplatesTable = config('short-url.table_prefix', 'short_url_').'utm_templates';
+
         return [
             'destination_url' => [$update ? 'sometimes' : 'required', 'url'],
             'url_key' => ['nullable', 'string', 'max:64'],
@@ -105,6 +124,13 @@ class LinkController
             'expires_at' => ['nullable', 'date'],
             'max_visits' => ['nullable', 'integer', 'min:1'],
             'password' => ['nullable', 'string', 'min:4'],
+            'custom_domain_id' => ['nullable', 'integer', 'exists:'.$customDomainsTable.',id'],
+            'utm_source' => ['nullable', 'string', 'max:255'],
+            'utm_medium' => ['nullable', 'string', 'max:255'],
+            'utm_campaign' => ['nullable', 'string', 'max:255'],
+            'utm_term' => ['nullable', 'string', 'max:255'],
+            'utm_content' => ['nullable', 'string', 'max:255'],
+            'utm_template_id' => ['nullable', 'integer', 'exists:'.$utmTemplatesTable.',id'],
         ];
     }
 

@@ -88,6 +88,34 @@ class ShortUrlBuilder
         return $this;
     }
 
+    public function customDomain(?int $customDomainId): static
+    {
+        $this->attributes['custom_domain_id'] = $customDomainId;
+
+        return $this;
+    }
+
+    /**
+     * Fills in whichever utm_source/medium/campaign/term/content the caller
+     * didn't already set explicitly via utm() — explicit values always win.
+     */
+    public function utmTemplate(int $utmTemplateId): static
+    {
+        $this->attributes['utm_template_id'] = $utmTemplateId;
+
+        return $this;
+    }
+
+    /**
+     * @param  array{utm_source?: ?string, utm_medium?: ?string, utm_campaign?: ?string, utm_term?: ?string, utm_content?: ?string}  $attributes
+     */
+    public function utm(array $attributes): static
+    {
+        $this->attributes = array_merge($this->attributes, $attributes);
+
+        return $this;
+    }
+
     public function create(): ShortUrlModel
     {
         return app(ShortUrlManager::class)->create($this->attributes);

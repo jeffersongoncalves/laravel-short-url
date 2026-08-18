@@ -55,11 +55,14 @@ class DispatchTracking
             'is_proxy' => (bool) ($context->tracking['is_proxy'] ?? false),
             'is_tor' => (bool) ($context->tracking['is_tor'] ?? false),
             'is_datacenter' => (bool) ($context->tracking['is_datacenter'] ?? false),
-            'utm_source' => $request->query('utm_source'),
-            'utm_medium' => $request->query('utm_medium'),
-            'utm_campaign' => $request->query('utm_campaign'),
-            'utm_term' => $request->query('utm_term'),
-            'utm_content' => $request->query('utm_content'),
+            // The click's own query params win when present — a link's
+            // stored utm_* is only the default attribution for clicks that
+            // don't specify their own.
+            'utm_source' => $request->query('utm_source') ?? $shortUrl->utm_source,
+            'utm_medium' => $request->query('utm_medium') ?? $shortUrl->utm_medium,
+            'utm_campaign' => $request->query('utm_campaign') ?? $shortUrl->utm_campaign,
+            'utm_term' => $request->query('utm_term') ?? $shortUrl->utm_term,
+            'utm_content' => $request->query('utm_content') ?? $shortUrl->utm_content,
             'selected_variant' => $context->tracking['selected_variant'] ?? null,
             'matched_rule_index' => $context->tracking['matched_rule_index'] ?? null,
             'response_time_ms' => is_numeric($startedAt) ? (int) ((microtime(true) - (float) $startedAt) * 1000) : null,

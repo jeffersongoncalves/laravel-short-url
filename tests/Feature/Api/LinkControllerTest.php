@@ -1,7 +1,9 @@
 <?php
 
 use Illuminate\Support\Facades\Hash;
+use JeffersonGoncalves\LaravelShortUrl\Models\CustomDomain;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
+use JeffersonGoncalves\LaravelShortUrl\Models\UtmTemplate;
 
 beforeEach(function () {
     config(['short-url.api.enabled' => true]);
@@ -23,6 +25,63 @@ it('creates a link', function () {
 
     $response->assertJsonPath('data.destination_url', 'https://example.com/target');
     expect(ShortUrl::query()->count())->toBe(1);
+});
+
+it('returns the ready-to-use short url on create', function () {
+    $response = $this->withHeaders(apiHeaders(['links:write']))
+        ->postJson('/api/short-url/v1/links', ['destination_url' => 'https://example.com/target', 'url_key' => 'aB3xK9'])
+        ->assertCreated();
+
+    $response->assertJsonPath('data.short_url', 'https://short.test/aB3xK9');
+});
+
+it('accepts custom_domain_id and utm attributes on create and returns them', function () {
+    $domain = CustomDomain::factory()->create(['domain' => 'links.example.com', 'is_verified' => true]);
+
+    $response = $this->withHeaders(apiHeaders(['links:write']))
+        ->postJson('/api/short-url/v1/links', [
+            'destination_url' => 'https://example.com/target',
+            'custom_domain_id' => $domain->id,
+            'utm_medium' => 'sms',
+            'utm_campaign' => 'launch',
+        ])
+        ->assertCreated();
+
+    $response->assertJsonPath('data.custom_domain_id', $domain->id)
+        ->assertJsonPath('data.utm_medium', 'sms')
+        ->assertJsonPath('data.utm_campaign', 'launch');
+});
+
+it('applies a utm_template_id on create', function () {
+    $template = UtmTemplate::factory()->create(['utm_medium' => 'agent']);
+
+    $response = $this->withHeaders(apiHeaders(['links:write']))
+        ->postJson('/api/short-url/v1/links', [
+            'destination_url' => 'https://example.com/target',
+            'utm_template_id' => $template->id,
+        ])
+        ->assertCreated();
+
+    $response->assertJsonPath('data.utm_medium', 'agent');
+});
+
+it('rejects creation with a 422 when a required utm parameter is missing', function () {
+    config(['short-url.utm.required' => ['utm_medium']]);
+
+    $this->withHeaders(apiHeaders(['links:write']))
+        ->postJson('/api/short-url/v1/links', ['destination_url' => 'https://example.com/target'])
+        ->assertStatus(422)
+        ->assertJsonPath('error.code', 'required_utm_parameter_missing');
+});
+
+it('rejects an update that would clear a required utm parameter', function () {
+    config(['short-url.utm.required' => ['utm_medium']]);
+    $shortUrl = ShortUrl::factory()->create(['utm_medium' => 'sms']);
+
+    $this->withHeaders(apiHeaders(['links:write']))
+        ->patchJson("/api/short-url/v1/links/{$shortUrl->uuid}", ['utm_medium' => null])
+        ->assertStatus(422)
+        ->assertJsonPath('error.code', 'required_utm_parameter_missing');
 });
 
 it('hashes a password supplied on create', function () {

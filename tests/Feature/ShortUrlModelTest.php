@@ -3,6 +3,7 @@
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use JeffersonGoncalves\LaravelShortUrl\Models\CustomDomain;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 
 it('casts attributes to the expected types', function () {
@@ -67,6 +68,41 @@ it('allows the same url_key to exist once per custom domain and once at the root
     // what actually landed in the column rather than the in-memory model,
     // which never had custom_domain_id set at all.
     expect($rootLink->refresh()->custom_domain_id)->toBe(0);
+});
+
+it('builds the full url against the app host by default', function () {
+    // TestCase pins short-url.route.domain to "short.test" — that config,
+    // when set, is authoritative over app.url's host (same priority
+    // ShortUrlObserver's cache-key resolution uses).
+    config(['short-url.route.prefix' => '']);
+
+    $shortUrl = ShortUrl::factory()->create(['url_key' => 'aB3xK9']);
+
+    expect($shortUrl->fullUrl())->toBe('https://short.test/aB3xK9');
+});
+
+it('falls back to app.url\'s host when no route.domain is configured', function () {
+    config(['short-url.route.domain' => null, 'app.url' => 'https://app.test', 'short-url.route.prefix' => '']);
+
+    $shortUrl = ShortUrl::factory()->create(['url_key' => 'aB3xK9']);
+
+    expect($shortUrl->fullUrl())->toBe('https://app.test/aB3xK9');
+});
+
+it('builds the full url against the verified custom domain when set', function () {
+    $domain = CustomDomain::factory()->create(['domain' => 'links.example.com', 'is_verified' => true]);
+
+    $shortUrl = ShortUrl::factory()->create(['url_key' => 'aB3xK9', 'custom_domain_id' => $domain->id]);
+
+    expect($shortUrl->fullUrl())->toBe('https://links.example.com/aB3xK9');
+});
+
+it('includes the configured route prefix in the full url', function () {
+    config(['short-url.route.prefix' => 'go']);
+
+    $shortUrl = ShortUrl::factory()->create(['url_key' => 'aB3xK9']);
+
+    expect($shortUrl->fullUrl())->toBe('https://short.test/go/aB3xK9');
 });
 
 it('scopes to enabled short urls only', function () {

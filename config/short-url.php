@@ -57,6 +57,30 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | UTM Parameters
+    |--------------------------------------------------------------------------
+    |
+    | Every short_url row can carry its own utm_source/medium/campaign/term/
+    | content — set directly, or via utm_template_id (see UtmTemplate) which
+    | fills in unset fields from a saved preset. These values are attached to
+    | the destination URL on redirect (see strip_utm_from_destination) and
+    | flow into visit tracking as the default attribution when the incoming
+    | click has no utm_* query params of its own.
+    |
+    | - required: attribute names (utm_source, utm_medium, utm_campaign,
+    |   utm_term, utm_content) that must be set — directly or via a template
+    |   — before ShortUrlManager will create a link. Empty by default
+    |   (nothing required). Set this to enforce channel tagging, e.g.
+    |   ['utm_medium'] to make every link declare whether it was shared by
+    |   email, SMS, an agent, etc.
+    |
+    */
+    'utm' => [
+        'required' => array_values(array_filter(explode(',', (string) env('SHORT_URL_REQUIRED_UTM', '')))),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Redirect
     |--------------------------------------------------------------------------
     |

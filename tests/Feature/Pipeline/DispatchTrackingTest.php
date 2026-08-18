@@ -54,6 +54,38 @@ it('stores a visit and increments counters synchronously on the sync queue', fun
         ->and($shortUrl->last_visited_at)->not->toBeNull();
 });
 
+it("falls back to the link's own utm_medium when the click has none", function () {
+    $shortUrl = ShortUrl::factory()->create(['track_visits' => true, 'utm_medium' => 'sms'])->fresh();
+
+    $request = Request::create('/'.$shortUrl->url_key); // no utm_* query params
+    $context = new RedirectContext($request, $shortUrl->url_key);
+    $context->shortUrl = $shortUrl;
+    $context->host = 'short.test';
+    $context->tracking = ['is_bot' => false];
+
+    (new DispatchTracking)($context, fn (RedirectContext $c) => $c);
+
+    $visit = Visit::query()->where('short_url_id', $shortUrl->id)->first();
+
+    expect($visit->utm_medium)->toBe('sms');
+});
+
+it("prefers the click's own utm_medium over the link's stored default", function () {
+    $shortUrl = ShortUrl::factory()->create(['track_visits' => true, 'utm_medium' => 'sms'])->fresh();
+
+    $request = Request::create('/'.$shortUrl->url_key, 'GET', ['utm_medium' => 'email']);
+    $context = new RedirectContext($request, $shortUrl->url_key);
+    $context->shortUrl = $shortUrl;
+    $context->host = 'short.test';
+    $context->tracking = ['is_bot' => false];
+
+    (new DispatchTracking)($context, fn (RedirectContext $c) => $c);
+
+    $visit = Visit::query()->where('short_url_id', $shortUrl->id)->first();
+
+    expect($visit->utm_medium)->toBe('email');
+});
+
 it('does not count a bot visit toward total or unique visits', function () {
     $shortUrl = ShortUrl::factory()->create(['track_visits' => true]);
 

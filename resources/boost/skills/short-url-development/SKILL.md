@@ -43,9 +43,34 @@ $link = ShortUrl::destination('https://example.com/product')
 
 // Resolve by key (used internally by the redirect pipeline too)
 $link = ShortUrl::resolve('promo25');
+
+// Ready-to-share URL — custom domain when set, otherwise the app's own host
+$link->fullUrl();
 ```
 
 Redirecting itself needs no controller — any request to `GET /{urlKey}` already flows through the full pipeline. Don't hand-roll a redirect route; extend the pipeline stages instead (see Contracts below) if you need custom behavior.
+
+## Campaign tagging (UTM)
+
+Every `ShortUrl` has its own `utm_source`/`utm_medium`/`utm_campaign`/`utm_term`/`utm_content`, plus a `custom_domain_id`. Both are settable directly or via a reusable `UtmTemplate` (tenant-scoped — the closest thing this package has to a "campaign"):
+
+@verbatim
+<code-snippet name="Tagging a link via a UTM template" lang="php">
+use JeffersonGoncalves\LaravelShortUrl\Models\UtmTemplate;
+
+$campaign = UtmTemplate::create(['name' => 'Spring SMS', 'utm_medium' => 'sms']);
+
+$link = ShortUrl::destination('https://example.com/product')
+    ->utmTemplate($campaign->id)          // fills in unset utm_* fields
+    ->utm(['utm_source' => 'agent-42'])   // explicit values always win
+    ->customDomain($domain->id)
+    ->create();
+</code-snippet>
+@endverbatim
+
+These values get attached to the destination URL on redirect (`BuildFinalUrl` stage — `strip_utm_from_destination` drops the click's own incoming `utm_*` first if you want the link's tag to be the only one that lands), and become the default attribution on the recorded `Visit` whenever the click's own query string doesn't specify `utm_*` — so a link generated for one specific channel is still correctly attributed even if the person sharing it doesn't append query params.
+
+Set `short-url.utm.required` (e.g. `['utm_medium']`) to make `ShortUrlManager::create()`/`update()` reject a link that doesn't declare those fields — directly, or via a template. This is enforced once, in the manager, so it applies uniformly across the facade, builder, REST API, and every importer (`CsvImporterDriver`, `BitlyImporterDriver`) — never re-implement this check at a call site.
 
 ## Destination types
 
