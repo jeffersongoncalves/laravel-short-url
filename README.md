@@ -61,6 +61,39 @@ $link = ShortUrl::resolve('promo25');
 
 Redirecting itself needs no extra code: any request to `GET /{urlKey}` already flows through the full pipeline.
 
+## Destination types
+
+`destination_type` is one of `single`, `split`, or `rules`:
+
+```php
+// Weighted A/B rotation
+ShortUrl::create([
+    'destination_url' => 'https://example.com/base', // fallback
+    'destination_type' => 'split',
+    'rotation_variants' => [
+        ['url' => 'https://a.test', 'weight' => 50, 'label' => 'A'],
+        ['url' => 'https://b.test', 'weight' => 50, 'label' => 'B'],
+    ],
+]);
+
+// Conditional targeting, evaluated per request
+ShortUrl::create([
+    'destination_url' => 'https://example.com/base', // used when no rule matches
+    'destination_type' => 'rules',
+    'targeting_rules' => [
+        [
+            'conditions' => [
+                ['type' => 'country', 'value' => 'FR'],
+                ['type' => 'device', 'value' => 'mobile'],
+            ],
+            'destination' => 'https://example.com/france-mobile',
+        ],
+    ],
+]);
+```
+
+A condition's `type` can be `device`, `platform`, `browser`, `country`, `language`, `referer`, `utm_source`/`utm_medium`/`utm_campaign`, a date/time window, `visit_count`, `vpn`, or `bot`. Conditions default to AND; wrap a group in `['or' => [...]]` for OR logic. A rule's `destination` can itself be a nested `split` array to combine targeting with rotation, and rotation picks are evaluated with statistical-significance tracking (Z-test) so you can tell when a split has a real winner.
+
 ## The redirect pipeline
 
 ```
@@ -93,6 +126,14 @@ Each stage can short-circuit by returning a `Response` directly (wrong password,
 | **ClickHouse** | Alternative `VisitRepository` driver over ClickHouse's native HTTP interface — same contract, no client library dependency. |
 | **Multi-tenancy** | Fully feature-flagged. Auto-scoped via `stancl/tenancy` when installed, or a manual config override. Configurable plan limits (`links_per_month`, `domains`, `retention_days`). |
 | **Link-in-bio** | Public pages at `/bio/{handle}` with blocks (link, text, image, video) and per-block click tracking. |
+
+Recording a conversion always persists it locally, then optionally forwards it server-to-server based on `short-url.conversions.driver`:
+
+```bash
+curl -X POST https://your-app.test/api/short-url/v1/conversions \
+  -H "Authorization: Bearer {api-key}" \
+  -d '{"url_key": "promo25", "event_name": "purchase", "value": 49.90, "currency": "USD"}'
+```
 
 ## Configuration
 
@@ -146,6 +187,10 @@ composer format   # Pint
 ```
 
 CI runs against PHP 8.4 / Laravel 13 on SQLite, MySQL, and PostgreSQL.
+
+## AI-assisted development
+
+This package ships a [Laravel Boost](https://github.com/laravel/boost) skill (`resources/boost/skills/short-url-development/`) and guideline (`resources/boost/guidelines/core.blade.php`) — if your project uses Boost, an AI assistant picks these up automatically and already knows the facade, contracts, destination types, and conventions above.
 
 ## Security
 

@@ -1,0 +1,91 @@
+## Laravel Short URL Package
+
+The `jeffersongoncalves/laravel-short-url` package is a headless URL-shortening engine: redirect pipeline, analytics, targeting rules, custom domains, webhooks, conversion tracking, QR codes, multi-tenancy, and link-in-bio. No Filament dependency — everything is reached through the `ShortUrl` facade, its contracts, the REST API, or console commands.
+
+### Package Namespace
+
+All classes are under `JeffersonGoncalves\LaravelShortUrl`.
+
+### Architecture
+
+- **Facade**: `JeffersonGoncalves\LaravelShortUrl\Facades\ShortUrl` — `create()`, `destination()`, `resolve()`
+- **Manager/Builder**: `ShortUrlManager` (facade target), `ShortUrlBuilder` (fluent creation)
+- **Redirect pipeline**: `RedirectPipeline` running stages in `src/Pipeline/Stages/` — cache-backed, each stage can short-circuit with a `Response`
+- **Contracts**: `src/Contracts/` — `VisitRepository`, `GeoIpDriver`, `VpnDetectionDriver`, `AnalyticsDriver`, `SafeBrowsingChecker`, `QrCodeBuilder`, `StatsAggregator`, `TargetingResolver`, `DnsVerifier`, `SettingsRepository`, `WebhookDispatcher`, `ImporterDriver`, `ConversionApiDispatcher`
+- **Registries** (use `extend()`, not rebind): `AnalyticsDriverRegistry`, `DeepLinkRegistry`, `PixelProviderRegistry`, `FilterTypeRegistry`, `ImporterDriverRegistry`
+
+### Key Conventions
+
+- All database tables use the `short_url_` prefix (`table_prefix` config)
+- `custom_domain_id` is `NOT NULL`, sentinel `0` means "no custom domain" — never `null` (NULL != NULL breaks the composite unique index); the builder/manager coerce `null` to `0` for you
+- Redirects happen via `GET /{urlKey}` already routed by the package — never write a competing redirect controller
+- Visit tracking is asynchronous (`TrackShortUrlVisitJob`) and never blocks/breaks a redirect
+- Multi-tenancy is entirely feature-flagged (`short-url.tenancy.enabled`), a complete no-op when off
+- Configuration lives in `config/short-url.php`, fully commented inline
+
+### Creating Links
+
+@verbatim
+<code-snippet name="Fluent creation via ShortUrlBuilder" lang="php">
+use JeffersonGoncalves\LaravelShortUrl\Facades\ShortUrl;
+
+$link = ShortUrl::destination('https://example.com/product')
+    ->key('promo25')
+    ->expiresAt(now()->addDays(30))
+    ->maxVisits(1000)
+    ->password('secret')
+    ->create();
+</code-snippet>
+@endverbatim
+
+@verbatim
+<code-snippet name="Split (A/B) and rules destinations" lang="php">
+ShortUrl::create([
+    'destination_url' => 'https://example.com/base',
+    'destination_type' => 'split',
+    'rotation_variants' => [
+        ['url' => 'https://a.test', 'weight' => 50, 'label' => 'A'],
+        ['url' => 'https://b.test', 'weight' => 50, 'label' => 'B'],
+    ],
+]);
+
+ShortUrl::create([
+    'destination_url' => 'https://example.com/base', // fallback
+    'destination_type' => 'rules',
+    'targeting_rules' => [
+        ['conditions' => [['type' => 'country', 'value' => 'FR']], 'destination' => 'https://example.com/france'],
+    ],
+]);
+</code-snippet>
+@endverbatim
+
+### The Redirect Pipeline
+
+`ResolveHost → RateLimit → ResolveShortUrl(cache) → DetectBot → DetectVpnProxy → CheckAvailability → RequirePassword → ShowWarning → ResolveDestination → BuildFinalUrl → RenderInterstitial → Respond → DispatchTracking`
+
+Each stage short-circuits by returning a `Response` (wrong password, expired link, blocked VPN, plan limit). The resolved link is cached (`{host}:{key}`), invalidated on `saved`/`deleted`.
+
+### Extending Analytics / Conversions
+
+@verbatim
+<code-snippet name="Registering a custom analytics driver" lang="php">
+use JeffersonGoncalves\LaravelShortUrl\Registries\AnalyticsDriverRegistry;
+
+$this->app->make(AnalyticsDriverRegistry::class)
+    ->extend('my_provider', fn () => new MyAnalyticsDriver);
+</code-snippet>
+@endverbatim
+
+Built-in analytics drivers: GA4, Plausible, PostHog, Matomo, Umami, Mixpanel, Segment — each gated by `short-url.analytics.{name}.enabled`. Built-in conversion API dispatchers: Meta, Google Enhanced Conversions, TikTok, LinkedIn — selected via `short-url.conversions.driver`.
+
+### REST API
+
+Disabled by default (`short-url.api`). API-key auth with per-key abilities (`links:read`, `links:write`, `conversions:write`, ...). Base path `/api/short-url/v1`: `links` (CRUD, bulk create up to 500), `links/{uuid}/stats`, `links/{uuid}/visits`, `domains`, `webhooks`, `conversions`, `export/csv`.
+
+### Events
+
+`ShortUrlVisited` (`$shortUrl`, `$visit`), `ConversionRecorded` (`$conversion`), `AlertTriggered` (Z-score anomaly detection against a 7-day baseline).
+
+### Testing Against This Package
+
+On Postgres, wrap assertions expecting a `QueryException` in `DB::transaction()` — an uncaught error aborts the whole enclosing transaction until a rollback, which would otherwise poison `RefreshDatabase`'s per-test transaction for whatever query runs next.
