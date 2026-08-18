@@ -1,3 +1,9 @@
+<div class="filament-hidden">
+
+![Laravel Short URL](https://raw.githubusercontent.com/jeffersongoncalves/laravel-short-url/master/art/jeffersongoncalves-laravel-short-url.png)
+
+</div>
+
 # Laravel Short URL
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/jeffersongoncalves/laravel-short-url.svg?style=flat-square)](https://packagist.org/packages/jeffersongoncalves/laravel-short-url)
@@ -9,9 +15,14 @@ Headless URL-shortening engine for Laravel. Zero dependency on Filament — work
 ## Why this package
 
 - **High throughput.** The redirect pipeline is a chain of independent, testable stages (`Illuminate\Pipeline`), with the resolved link cached and analytics writes made asynchronous — no external integration failure (GeoIP, Safe Browsing, VPN detection, webhooks) can ever break a redirect.
-- **Contract-driven.** Every swappable piece — analytics driver, DNS verifier, QR code builder, Safe Browsing checker, VPN detector — is an interface under `src/Contracts/`, with a default implementation and extensible registries (`AnalyticsDriverRegistry`, `DeepLinkRegistry`, `PixelProviderRegistry`, `FilterTypeRegistry`, `ImporterDriverRegistry`).
-- **Minimal dependencies.** Only `spatie/laravel-package-tools` is required. GeoIP (MaxMind), QR codes (`endroid/qr-code`), multi-tenancy (`stancl/tenancy`) and Redis (`predis/predis`) are all optional — the package works perfectly without them, each integration guarded by `class_exists`/a feature flag.
+- **Contract-driven.** Every swappable piece — analytics driver, conversion API dispatcher, DNS verifier, QR code builder, Safe Browsing checker, VPN detector — is an interface under `src/Contracts/`, with a default implementation and extensible registries (`AnalyticsDriverRegistry`, `DeepLinkRegistry`, `PixelProviderRegistry`, `FilterTypeRegistry`, `ImporterDriverRegistry`).
+- **Minimal dependencies.** Only `spatie/laravel-package-tools` and `illuminate/contracts` are required. GeoIP (MaxMind), QR codes (`endroid/qr-code`), multi-tenancy (`stancl/tenancy`) and Redis (`predis/predis`) are all optional — the package works perfectly without them, each integration guarded by `class_exists`/a feature flag.
 - **Multi-language.** pt_BR, en and es ship out of the box — no hardcoded strings outside `resources/lang`.
+
+## Requirements
+
+- PHP 8.3+
+- Laravel 12 or 13
 
 ## Installation
 
@@ -69,17 +80,18 @@ Each stage can short-circuit by returning a `Response` directly (wrong password,
 | **Targeting** | Nested `and\|or` rules by device, platform, browser, country, language, referer, UTM, date/time window, visit count, VPN, bot. Weighted A/B rotation with statistical significance (Z-test). |
 | **Custom domains** | DNS verification (TXT/CNAME/A), per-domain routing, wildcard support, root redirect. |
 | **Security** | Bcrypt password protection, signed-token warning page, Google Safe Browsing (sync or async blocking), VPN/proxy detection (flag or 403 block), rate limiting, full audit trail (before/after). |
-| **Compliance** | Configurable retention, per-subject data export/deletion (LGPD/GDPR), analytics-only mode (no PII stored). |
+| **Compliance** | Configurable retention (package-wide or per tenant plan), per-subject data export/deletion (LGPD/GDPR), analytics-only mode (no PII stored). |
 | **REST API** | `/api/short-url/v1` (disabled by default), API-key auth with abilities, per-key rate limiting, link CRUD, bulk create (up to 500), stats, visits, domains, webhooks, conversions. |
 | **Webhooks** | HMAC-SHA256 + anti-replay timestamp, retries at 10s/60s/300s, manual replay, auto-disable after consecutive failures. |
 | **External analytics** | GA4, Plausible, PostHog, Matomo, Umami, Mixpanel, and Segment built in; `AnalyticsDriverRegistry::extend()` to add any other provider. |
+| **Conversion tracking** | Server-to-server forwarding to Meta CAPI, Google Enhanced Conversions, TikTok Events API, and LinkedIn CAPI on `POST /conversions`. |
 | **Alerts** | Z-score anomaly detection against a 7-day baseline, notifications via mail, database, broadcast, Slack, Discord, Telegram, Teams. |
 | **QR codes** | SVG/PNG/PDF/EPS export (via the optional `endroid/qr-code`), scan tracking (`?source=qr`). |
 | **Deep links & pixels** | Mobile app opening via custom URL scheme, 10 pre-registered apps, optional AASA/assetlinks serving, retargeting pixels (Meta, Google Ads, TikTok, GA4) with an optional consent banner. |
 | **Organization** | Hierarchical folders, tags, UTM templates, archiving. |
 | **Import/Export** | Built-in CSV importer, Bitly API v4 as the reference per-provider importer, CSV export via the API. |
 | **ClickHouse** | Alternative `VisitRepository` driver over ClickHouse's native HTTP interface — same contract, no client library dependency. |
-| **Multi-tenancy** | Fully feature-flagged. Auto-scoped via `stancl/tenancy` when installed, or a manual config override. Configurable plan limits (`links_per_month`, `domains`). |
+| **Multi-tenancy** | Fully feature-flagged. Auto-scoped via `stancl/tenancy` when installed, or a manual config override. Configurable plan limits (`links_per_month`, `domains`, `retention_days`). |
 | **Link-in-bio** | Public pages at `/bio/{handle}` with blocks (link, text, image, video) and per-block click tracking. |
 
 ## Configuration
@@ -105,6 +117,8 @@ All self-register with the scheduler (`packageBooted()`), respecting their confi
 | `short-url:prune-webhook-deliveries` | weekly |
 | `short-url:import {driver} {source}` | manual |
 
+`aggregate-and-prune` prunes each tenant's visit rows against its own plan `retention_days` when multi-tenancy is enabled, falling back to the package-wide `short-url.tracking.retention_days` otherwise.
+
 ## Public surface (contract with the UI plugin)
 
 ```php
@@ -126,12 +140,12 @@ PixelProviderRegistry, ImporterDriverRegistry
 ## Testing
 
 ```bash
-composer test        # Pest
-composer analyse      # PHPStan (Larastan) level 5+
-composer format        # Pint
+composer test     # Pest
+composer analyse  # PHPStan (Larastan) level 6
+composer format   # Pint
 ```
 
-CI runs the suite against PHP 8.3/8.4 × Laravel 12/13 × PostgreSQL/MySQL/SQLite. An architecture test (`Tests\Architecture\NoFilamentTest`) guarantees no file imports `Filament\`.
+CI runs the full PHP 8.3/8.4 × Laravel 12/13 grid against SQLite, plus one smoke-test job each against MySQL and PostgreSQL. An architecture test (`Tests\Architecture\NoFilamentTest`) guarantees no file imports `Filament\`.
 
 ## Security
 
