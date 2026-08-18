@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.2.0](https://github.com/jeffersongoncalves/laravel-short-url/compare/v1.1.0...v1.2.0) - 2026-08-18
+
+Cross-link stats aggregation and a global stats endpoint.
+
+- VisitRepository::aggregateMany(array $shortUrlIds, ...) — both Eloquent and ClickHouse drivers, same shape as aggregate() but summed across a set of links.
+- StatsAggregator::forShortUrls(array $shortUrlIds) alongside the existing for($shortUrl) — link selection stays the caller's job via ShortUrl's own tenant-scoped query, the aggregator only does the math.
+- GET /api/short-url/v1/stats (optionally ?folder_id=/?tag_id=) — a global breakdown across every link a caller can see, so a dashboard never has to query short_url_visits/short_url_daily_stats directly.
+- Docs: README and the Laravel Boost skill/guideline updated to match.
+
 ## [v1.1.0](https://github.com/jeffersongoncalves/laravel-short-url/compare/v1.0.1...v1.1.0) - 2026-08-18
 
 Enforceable UTM campaign tagging and a ready-to-use short_url in the API.
