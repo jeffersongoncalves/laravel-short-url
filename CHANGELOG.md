@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.1.0](https://github.com/jeffersongoncalves/laravel-short-url/compare/v1.0.1...v1.1.0) - 2026-08-18
+
+Enforceable UTM campaign tagging and a ready-to-use short_url in the API.
+
+- ShortUrl.utm_source/medium/campaign/term/content are now live: attached to the destination on redirect (BuildFinalUrl, honoring strip_utm_from_destination) and used as the default attribution on a visit whenever the click itself carries no utm_* (DispatchTracking) — a link generated for one channel stays correctly attributed even if whoever shares it doesn't append query params.
+- UtmTemplate is now usable as a reusable campaign preset: ShortUrlBuilder::utmTemplate()/utm()/customDomain(); ShortUrlManager applies a template's non-null fields as defaults under explicit attributes.
+- short-url.utm.required (e.g. ['utm_medium']) makes ShortUrlManager reject creating or updating a link that doesn't declare those fields — enforced once in the manager, so it holds across the facade, builder, REST API, and every importer.
+- ShortUrl::fullUrl() builds the ready-to-share link. ShortUrlResource now returns it as short_url, plus custom_domain_id and utm_*; LinkController's create/update/bulk validation now accepts all of them.
+- Fix: ShortUrlManager::resolve($key, $host) now actually uses $host to scope resolution to a custom domain.
+- Docs: README and the Laravel Boost skill/guideline updated to match.
+
 ## [v1.0.1](https://github.com/jeffersongoncalves/laravel-short-url/compare/v1.0.0...v1.0.1) - 2026-08-18
 
 Docs and CI only — no functional changes.
