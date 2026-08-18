@@ -9,6 +9,7 @@ use JeffersonGoncalves\LaravelShortUrl\Analytics\PlausibleAnalyticsDriver;
 use JeffersonGoncalves\LaravelShortUrl\Console\Commands\AggregateAndPruneCommand;
 use JeffersonGoncalves\LaravelShortUrl\Console\Commands\CheckSafeBrowsingCommand;
 use JeffersonGoncalves\LaravelShortUrl\Console\Commands\DetectAnomaliesCommand;
+use JeffersonGoncalves\LaravelShortUrl\Console\Commands\ImportCommand;
 use JeffersonGoncalves\LaravelShortUrl\Console\Commands\PruneWebhookDeliveriesCommand;
 use JeffersonGoncalves\LaravelShortUrl\Console\Commands\SendScheduledReportsCommand;
 use JeffersonGoncalves\LaravelShortUrl\Console\Commands\SyncCountersCommand;
@@ -30,6 +31,8 @@ use JeffersonGoncalves\LaravelShortUrl\Dns\NativeDnsVerifier;
 use JeffersonGoncalves\LaravelShortUrl\GeoIp\HeadersGeoIpDriver;
 use JeffersonGoncalves\LaravelShortUrl\GeoIp\IpApiGeoIpDriver;
 use JeffersonGoncalves\LaravelShortUrl\GeoIp\MaxMindGeoIpDriver;
+use JeffersonGoncalves\LaravelShortUrl\Importers\BitlyImporterDriver;
+use JeffersonGoncalves\LaravelShortUrl\Importers\CsvImporterDriver;
 use JeffersonGoncalves\LaravelShortUrl\Models\CustomDomain;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 use JeffersonGoncalves\LaravelShortUrl\Observers\AuditLogObserver;
@@ -40,7 +43,9 @@ use JeffersonGoncalves\LaravelShortUrl\Qr\EndroidQrCodeBuilder;
 use JeffersonGoncalves\LaravelShortUrl\Registries\AnalyticsDriverRegistry;
 use JeffersonGoncalves\LaravelShortUrl\Registries\DeepLinkRegistry;
 use JeffersonGoncalves\LaravelShortUrl\Registries\FilterTypeRegistry;
+use JeffersonGoncalves\LaravelShortUrl\Registries\ImporterDriverRegistry;
 use JeffersonGoncalves\LaravelShortUrl\Registries\PixelProviderRegistry;
+use JeffersonGoncalves\LaravelShortUrl\Repositories\ClickHouseVisitRepository;
 use JeffersonGoncalves\LaravelShortUrl\Repositories\EloquentVisitRepository;
 use JeffersonGoncalves\LaravelShortUrl\Security\GoogleSafeBrowsingChecker;
 use JeffersonGoncalves\LaravelShortUrl\Security\IpApiVpnDetectionDriver;
@@ -75,6 +80,9 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
                 'create_short_url_conversions_table',
                 'create_short_url_alerts_table',
                 'create_short_url_pixels_table',
+                'create_short_url_folders_table',
+                'create_short_url_tags_table',
+                'create_short_url_utm_templates_table',
             ])
             ->hasTranslations()
             ->hasViews()
@@ -87,6 +95,7 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
                 PruneWebhookDeliveriesCommand::class,
                 DetectAnomaliesCommand::class,
                 SendScheduledReportsCommand::class,
+                ImportCommand::class,
             ]);
     }
 
@@ -102,8 +111,11 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
         $this->app->bind(QrCodeBuilder::class, EndroidQrCodeBuilder::class);
 
         $this->app->singleton(VisitRepository::class, fn () => match (config('short-url.tracking.driver', 'eloquent')) {
+            'clickhouse' => new ClickHouseVisitRepository,
             default => new EloquentVisitRepository,
         });
+
+        $this->app->singleton(ImporterDriverRegistry::class);
 
         $this->app->bind(StatsAggregator::class, EloquentStatsAggregator::class);
         $this->app->bind(TargetingResolver::class, RuleBasedTargetingResolver::class);
@@ -145,6 +157,10 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
         $analyticsDrivers = $this->app->make(AnalyticsDriverRegistry::class);
         $analyticsDrivers->extend('ga4', fn () => new Ga4AnalyticsDriver);
         $analyticsDrivers->extend('plausible', fn () => new PlausibleAnalyticsDriver);
+
+        $importers = $this->app->make(ImporterDriverRegistry::class);
+        $importers->extend('csv', fn () => $this->app->make(CsvImporterDriver::class));
+        $importers->extend('bitly', fn () => $this->app->make(BitlyImporterDriver::class));
 
         $this->app->booted(function (): void {
             $schedule = $this->app->make(Schedule::class);

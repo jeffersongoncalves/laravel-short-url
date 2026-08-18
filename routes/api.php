@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use JeffersonGoncalves\LaravelShortUrl\Http\Controllers\Api\ConversionController;
 use JeffersonGoncalves\LaravelShortUrl\Http\Controllers\Api\DomainController;
+use JeffersonGoncalves\LaravelShortUrl\Http\Controllers\Api\ExportController;
 use JeffersonGoncalves\LaravelShortUrl\Http\Controllers\Api\LinkController;
 use JeffersonGoncalves\LaravelShortUrl\Http\Controllers\Api\StatsController;
 use JeffersonGoncalves\LaravelShortUrl\Http\Controllers\Api\VisitController;
@@ -23,6 +24,7 @@ Route::prefix(config('short-url.api.prefix', 'api/short-url/v1'))
             Route::get('links/{shortUrl:uuid}/visits', [VisitController::class, 'index'])->name('links.visits');
             Route::get('domains', [DomainController::class, 'index'])->name('domains.index');
             Route::get('webhooks', [WebhookController::class, 'index'])->name('webhooks.index');
+            Route::get('export/csv', [ExportController::class, 'csv'])->name('export.csv');
         });
 
         Route::middleware(ApiKeyAuth::class.':links:write')->group(function (): void {

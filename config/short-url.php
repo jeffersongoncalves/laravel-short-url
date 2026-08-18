@@ -120,6 +120,16 @@ return [
         'ip_hash_salt' => env('SHORT_URL_IP_HASH_SALT'),
 
         'retention_days' => env('SHORT_URL_VISIT_RETENTION_DAYS', 400),
+
+        // Only read when driver is "clickhouse". Talks to ClickHouse's
+        // native HTTP interface directly — no client library required.
+        'clickhouse' => [
+            'host' => env('SHORT_URL_CLICKHOUSE_HOST'),
+            'port' => env('SHORT_URL_CLICKHOUSE_PORT', 8123),
+            'database' => env('SHORT_URL_CLICKHOUSE_DATABASE', 'default'),
+            'username' => env('SHORT_URL_CLICKHOUSE_USERNAME', 'default'),
+            'password' => env('SHORT_URL_CLICKHOUSE_PASSWORD', ''),
+        ],
     ],
 
     /*
@@ -388,6 +398,17 @@ return [
     */
     'pixels' => [
         'require_consent' => env('SHORT_URL_PIXELS_REQUIRE_CONSENT', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Importers
+    |--------------------------------------------------------------------------
+    */
+    'importers' => [
+        'bitly' => [
+            'access_token' => env('SHORT_URL_BITLY_ACCESS_TOKEN'),
+        ],
     ],
 
     // Additional keys for future phases (multi-tenancy, ...) will be added

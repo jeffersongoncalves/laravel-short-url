@@ -179,4 +179,46 @@ class ShortUrl extends Model
             config('short-url.table_prefix', 'short_url_').'pixel_short_url'
         );
     }
+
+    public function folder(): BelongsTo
+    {
+        return $this->belongsTo(Folder::class, 'folder_id');
+    }
+
+    /**
+     * @return BelongsToMany<Tag, $this>
+     */
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Tag::class,
+            config('short-url.table_prefix', 'short_url_').'tag_short_url'
+        );
+    }
+
+    public function archive(): void
+    {
+        $this->forceFill(['archived_at' => now()])->save();
+    }
+
+    public function unarchive(): void
+    {
+        $this->forceFill(['archived_at' => null])->save();
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     */
+    public function scopeArchived(Builder $query): void
+    {
+        $query->whereNotNull('archived_at');
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     */
+    public function scopeNotArchived(Builder $query): void
+    {
+        $query->whereNull('archived_at');
+    }
 }
