@@ -4,22 +4,22 @@
 [![Tests](https://img.shields.io/github/actions/workflow/status/jeffersongoncalves/laravel-short-url/tests.yml?branch=master&label=tests&style=flat-square)](https://github.com/jeffersongoncalves/laravel-short-url/actions/workflows/tests.yml)
 [![Total Downloads](https://img.shields.io/packagist/dt/jeffersongoncalves/laravel-short-url.svg?style=flat-square)](https://packagist.org/packages/jeffersongoncalves/laravel-short-url)
 
-Motor headless de encurtamento de URLs para Laravel. Sem nenhuma dependência de Filament — consumido pelo pacote de UI [`jeffersongoncalves/filament-short-url`](https://github.com/jeffersongoncalves/filament-short-url), mas funciona sozinho em qualquer aplicação Laravel via Facade, API REST ou console.
+Headless URL-shortening engine for Laravel. Zero dependency on Filament — works standalone in any Laravel app via its Facade, REST API, or console commands.
 
-## Por que este pacote
+## Why this package
 
-- **Alto throughput.** O pipeline de redirecionamento é uma cadeia de estágios independentes e testáveis (`Illuminate\Pipeline`), com cache do link resolvido e escrita de analytics assíncrona — nenhuma falha de integração externa (GeoIP, Safe Browsing, VPN, webhooks) derruba um redirect.
-- **Orientado a contratos.** Toda peça substituível — driver de analytics, verificador de DNS, gerador de QR Code, checker de Safe Browsing, detector de VPN — é uma interface em `src/Contracts/`, com uma implementação padrão e registries extensíveis (`AnalyticsDriverRegistry`, `DeepLinkRegistry`, `PixelProviderRegistry`, `FilterTypeRegistry`, `ImporterDriverRegistry`).
-- **Dependências mínimas.** Só `spatie/laravel-package-tools` é obrigatório. GeoIP (MaxMind), QR Code (`endroid/qr-code`), multi-tenancy (`stancl/tenancy`) e Redis (`predis/predis`) são todos opcionais — o pacote funciona perfeitamente sem eles, cada integração é guardada por `class_exists`/feature-flag.
-- **Multi-idioma.** pt_BR, en e es prontos — nenhuma string hardcoded fora de `resources/lang`.
+- **High throughput.** The redirect pipeline is a chain of independent, testable stages (`Illuminate\Pipeline`), with the resolved link cached and analytics writes made asynchronous — no external integration failure (GeoIP, Safe Browsing, VPN detection, webhooks) can ever break a redirect.
+- **Contract-driven.** Every swappable piece — analytics driver, DNS verifier, QR code builder, Safe Browsing checker, VPN detector — is an interface under `src/Contracts/`, with a default implementation and extensible registries (`AnalyticsDriverRegistry`, `DeepLinkRegistry`, `PixelProviderRegistry`, `FilterTypeRegistry`, `ImporterDriverRegistry`).
+- **Minimal dependencies.** Only `spatie/laravel-package-tools` is required. GeoIP (MaxMind), QR codes (`endroid/qr-code`), multi-tenancy (`stancl/tenancy`) and Redis (`predis/predis`) are all optional — the package works perfectly without them, each integration guarded by `class_exists`/a feature flag.
+- **Multi-language.** pt_BR, en and es ship out of the box — no hardcoded strings outside `resources/lang`.
 
-## Instalação
+## Installation
 
 ```bash
 composer require jeffersongoncalves/laravel-short-url
 ```
 
-Publique config, migrations e traduções:
+Publish config, migrations and translations:
 
 ```bash
 php artisan vendor:publish --tag="short-url-config"
@@ -28,29 +28,29 @@ php artisan vendor:publish --tag="short-url-translations"
 php artisan migrate
 ```
 
-## Uso rápido
+## Quick usage
 
 ```php
 use JeffersonGoncalves\LaravelShortUrl\Facades\ShortUrl;
 
-// Criar
-$link = ShortUrl::create(['destination_url' => 'https://example.com/produto']);
+// Create
+$link = ShortUrl::create(['destination_url' => 'https://example.com/product']);
 
-// Fluente
-$link = ShortUrl::destination('https://example.com/produto')
+// Fluent
+$link = ShortUrl::destination('https://example.com/product')
     ->key('promo25')
     ->expiresAt(now()->addDays(30))
     ->maxVisits(1000)
-    ->password('segredo')
+    ->password('secret')
     ->create();
 
-// Resolver
+// Resolve
 $link = ShortUrl::resolve('promo25');
 ```
 
-O redirecionamento em si já funciona sem nenhuma linha de código extra: qualquer requisição em `GET /{urlKey}` passa pelo pipeline completo.
+Redirecting itself needs no extra code: any request to `GET /{urlKey}` already flows through the full pipeline.
 
-## O pipeline de redirecionamento
+## The redirect pipeline
 
 ```
 ResolveHost → RateLimit → ResolveShortUrl(cache) → DetectBot → DetectVpnProxy
@@ -58,54 +58,54 @@ ResolveHost → RateLimit → ResolveShortUrl(cache) → DetectBot → DetectVpn
 → BuildFinalUrl → RenderInterstitial → Respond → DispatchTracking
 ```
 
-Cada estágio pode curto-circuitar retornando uma `Response` diretamente (senha incorreta, aviso de destino, link expirado, VPN bloqueada, limite de plano). O link resolvido fica em cache (`{host}:{key}`) e a invalidação acontece automaticamente em `saved`/`deleted`.
+Each stage can short-circuit by returning a `Response` directly (wrong password, destination warning, expired link, blocked VPN, plan limit). The resolved link is cached (`{host}:{key}`) and invalidated automatically on `saved`/`deleted`.
 
-## Principais funcionalidades
+## Feature overview
 
-| Área | Descrição |
+| Area | Description |
 | --- | --- |
-| **Redirecionamento** | Base62 configurável, blacklist, unicidade por domínio, `301\|302\|307\|308`, `single_use`, `max_visits`, expiração com redirect de fallback. |
-| **Analytics** | Visitas assíncronas (`TrackShortUrlVisitJob`), parser de UA com fast-path, GeoIP (headers CDN / MaxMind / ip-api), detecção de bot, anonimização de IP (IPv4 /24, IPv6 /48), agregação diária + retenção configurável. |
-| **Segmentação** | Regras `and\|or` aninhadas por dispositivo, plataforma, navegador, país, idioma, referer, UTM, janela de data/hora, contagem de visitas, VPN, bot. Rotação A/B ponderada com significância estatística (teste Z). |
-| **Domínios próprios** | Verificação DNS (TXT/CNAME/A), roteamento por domínio, wildcard, redirect de raiz. |
-| **Segurança** | Senha com bcrypt, página de aviso com token assinado, Google Safe Browsing (bloqueio síncrono ou assíncrono), detecção de VPN/proxy (flag ou bloqueio 403), rate limiting, auditoria completa (before/after). |
-| **Conformidade** | Retenção configurável, exportação/exclusão de dados por sujeito (LGPD), modo somente-analytics (sem PII). |
-| **API REST** | `/api/short-url/v1` (desativada por padrão), autenticação por API key com abilities, rate limit por chave, CRUD de links, bulk (até 500), stats, visits, domínios, webhooks, conversões. |
-| **Webhooks** | HMAC-SHA256 + timestamp anti-replay, retry 10s/60s/300s, replay manual, desativação automática após falhas consecutivas. |
-| **Analytics externo** | GA4 Measurement Protocol e Plausible prontos; `AnalyticsDriverRegistry::extend()` para adicionar qualquer outro. |
-| **Alertas** | Detecção de anomalia por z-score contra baseline de 7 dias, notificações por e-mail, banco, broadcast, Slack, Discord, Telegram, Teams. |
-| **QR Code** | SVG/PNG/PDF/EPS (via `endroid/qr-code`, opcional), tracking de escaneamento (`?source=qr`). |
-| **Deep links & pixels** | Abertura de app mobile por scheme customizado, 10 apps pré-cadastrados, AASA/assetlinks opcionais, pixels de retargeting (Meta, Google Ads, TikTok, GA4) com banner de consentimento opcional. |
-| **Organização** | Pastas hierárquicas, tags, templates de UTM, arquivamento. |
-| **Importação/Exportação** | CSV nativo, Bitly API v4 como referência de importador por provedor, exportação CSV via API. |
-| **ClickHouse** | Driver alternativo de `VisitRepository` via HTTP nativo do ClickHouse — mesma interface, sem dependência de cliente. |
-| **Multi-tenancy** | Feature-flag total. Escopo automático via `stancl/tenancy` (se instalado) ou config manual. Limites de plano (`links_per_month`, `domains`) configuráveis. |
-| **Link-in-bio** | Páginas públicas em `/bio/{handle}` com blocos (link, texto, imagem, vídeo) e tracking de clique por bloco. |
+| **Redirecting** | Configurable Base62 keys, blacklist, uniqueness per domain, `301\|302\|307\|308`, `single_use`, `max_visits`, expiration with a fallback redirect. |
+| **Analytics** | Asynchronous visit tracking (`TrackShortUrlVisitJob`), fast-path UA parsing, GeoIP (CDN headers / MaxMind / ip-api), bot detection, IP anonymization (IPv4 /24, IPv6 /48), daily aggregation with configurable retention. |
+| **Targeting** | Nested `and\|or` rules by device, platform, browser, country, language, referer, UTM, date/time window, visit count, VPN, bot. Weighted A/B rotation with statistical significance (Z-test). |
+| **Custom domains** | DNS verification (TXT/CNAME/A), per-domain routing, wildcard support, root redirect. |
+| **Security** | Bcrypt password protection, signed-token warning page, Google Safe Browsing (sync or async blocking), VPN/proxy detection (flag or 403 block), rate limiting, full audit trail (before/after). |
+| **Compliance** | Configurable retention, per-subject data export/deletion (LGPD/GDPR), analytics-only mode (no PII stored). |
+| **REST API** | `/api/short-url/v1` (disabled by default), API-key auth with abilities, per-key rate limiting, link CRUD, bulk create (up to 500), stats, visits, domains, webhooks, conversions. |
+| **Webhooks** | HMAC-SHA256 + anti-replay timestamp, retries at 10s/60s/300s, manual replay, auto-disable after consecutive failures. |
+| **External analytics** | GA4 Measurement Protocol and Plausible built in; `AnalyticsDriverRegistry::extend()` to add any other provider. |
+| **Alerts** | Z-score anomaly detection against a 7-day baseline, notifications via mail, database, broadcast, Slack, Discord, Telegram, Teams. |
+| **QR codes** | SVG/PNG/PDF/EPS export (via the optional `endroid/qr-code`), scan tracking (`?source=qr`). |
+| **Deep links & pixels** | Mobile app opening via custom URL scheme, 10 pre-registered apps, optional AASA/assetlinks serving, retargeting pixels (Meta, Google Ads, TikTok, GA4) with an optional consent banner. |
+| **Organization** | Hierarchical folders, tags, UTM templates, archiving. |
+| **Import/Export** | Built-in CSV importer, Bitly API v4 as the reference per-provider importer, CSV export via the API. |
+| **ClickHouse** | Alternative `VisitRepository` driver over ClickHouse's native HTTP interface — same contract, no client library dependency. |
+| **Multi-tenancy** | Fully feature-flagged. Auto-scoped via `stancl/tenancy` when installed, or a manual config override. Configurable plan limits (`links_per_month`, `domains`). |
+| **Link-in-bio** | Public pages at `/bio/{handle}` with blocks (link, text, image, video) and per-block click tracking. |
 
-## Configuração
+## Configuration
 
-Toda opção fica documentada inline em `config/short-url.php`. Os grupos principais:
+Every option is documented inline in `config/short-url.php`. Main groups:
 
-`table_prefix`, `route`, `key`, `redirect`, `cache`, `tracking` (inclui `clickhouse`), `domains`, `branding`, `security` (senha, aviso, rate limit, VPN, safe browsing), `compliance`, `audit`, `api`, `webhooks`, `analytics`, `conversions`, `alerts`, `notifications`, `qr`, `deep_links`, `pixels`, `importers`, `tenancy`, `bio`.
+`table_prefix`, `route`, `key`, `redirect`, `cache`, `tracking` (includes `clickhouse`), `domains`, `branding`, `security` (password, warning, rate limit, VPN, safe browsing), `compliance`, `audit`, `api`, `webhooks`, `analytics`, `conversions`, `alerts`, `notifications`, `qr`, `deep_links`, `pixels`, `importers`, `tenancy`, `bio`.
 
-Settings também podem ser lidas/gravadas em runtime via `Contracts\SettingsRepository`, com schema declarativo (`schema()`) para montar formulários dinâmicos no plugin de UI.
+Settings can also be read/written at runtime via `Contracts\SettingsRepository`, with a declarative schema (`schema()`) for building dynamic forms in the UI plugin.
 
-## Comandos artisan
+## Artisan commands
 
-Todos se auto-registram no agendador (`packageBooted()`), respeitando os toggles de config:
+All self-register with the scheduler (`packageBooted()`), respecting their config toggles:
 
-| Comando | Frequência |
+| Command | Frequency |
 | --- | --- |
-| `short-url:sync-counters` | a cada minuto (com buffering de contadores ativo) |
-| `short-url:aggregate-and-prune` | diário 02:00 |
-| `short-url:verify-domains` | a cada 6h |
-| `short-url:check-safe-browsing` | diário |
-| `short-url:detect-anomalies` | horário |
-| `short-url:send-scheduled-reports` | diário |
-| `short-url:prune-webhook-deliveries` | semanal |
+| `short-url:sync-counters` | every minute (when counter buffering is on) |
+| `short-url:aggregate-and-prune` | daily at 02:00 |
+| `short-url:verify-domains` | every 6h |
+| `short-url:check-safe-browsing` | daily |
+| `short-url:detect-anomalies` | hourly |
+| `short-url:send-scheduled-reports` | daily |
+| `short-url:prune-webhook-deliveries` | weekly |
 | `short-url:import {driver} {source}` | manual |
 
-## Superfície pública (contrato com o plugin de UI)
+## Public surface (contract with the UI plugin)
 
 ```php
 ShortUrl::create(array $attributes): ShortUrlModel
@@ -123,25 +123,25 @@ FilterTypeRegistry, AnalyticsDriverRegistry, DeepLinkRegistry,
 PixelProviderRegistry, ImporterDriverRegistry
 ```
 
-## Testes
+## Testing
 
 ```bash
 composer test        # Pest
-composer analyse      # PHPStan (Larastan) nível 5+
+composer analyse      # PHPStan (Larastan) level 5+
 composer format        # Pint
 ```
 
-O CI roda a suíte contra PHP 8.3/8.4 × Laravel 11/12 × PostgreSQL/MySQL/SQLite. Um teste de arquitetura (`Tests\Architecture\NoFilamentTest`) garante que nenhum arquivo importa `Filament\`.
+CI runs the suite against PHP 8.3/8.4 × Laravel 11/12 × PostgreSQL/MySQL/SQLite. An architecture test (`Tests\Architecture\NoFilamentTest`) guarantees no file imports `Filament\`.
 
-## Segurança
+## Security
 
-Encontrou uma vulnerabilidade de segurança? Veja [SECURITY.md](.github/SECURITY.md).
+Found a security vulnerability? See [SECURITY.md](.github/SECURITY.md).
 
-## Créditos
+## Credits
 
 - [Jefferson Gonçalves](https://github.com/jeffersongoncalves)
-- [Todos os contribuidores](../../contributors)
+- [All contributors](../../contributors)
 
-## Licença
+## License
 
-MIT. Veja [LICENSE.md](LICENSE.md) para mais informações.
+MIT. See [LICENSE.md](LICENSE.md) for more information.
