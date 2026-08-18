@@ -39,3 +39,36 @@ it('folds yesterdays visits into a daily_stats row and prunes old visits', funct
         ->and(json_decode((string) $row->country_stats, true))->toBe(['BR' => 1])
         ->and(Visit::query()->count())->toBe(1);
 });
+
+it('applies each tenant\'s plan retention_days when tenancy is enabled', function () {
+    config([
+        'short-url.tracking.retention_days' => 400,
+        'short-url.tenancy.enabled' => true,
+        'short-url.tenancy.plan_resolver' => fn ($tenantId) => $tenantId === 1 ? 'basic' : 'default',
+        'short-url.tenancy.plans.basic.retention_days' => 30,
+    ]);
+
+    $shortUrl = ShortUrl::factory()->create();
+
+    Visit::query()->create([
+        'short_url_id' => $shortUrl->id,
+        'visited_at' => now()->subDays(90),
+        'is_bot' => false,
+        'ip_hash' => 'tenant-1',
+        'tenant_id' => 1,
+        'created_at' => now()->subDays(90),
+    ]);
+    Visit::query()->create([
+        'short_url_id' => $shortUrl->id,
+        'visited_at' => now()->subDays(90),
+        'is_bot' => false,
+        'ip_hash' => 'tenant-2',
+        'tenant_id' => 2,
+        'created_at' => now()->subDays(90),
+    ]);
+
+    $this->artisan('short-url:aggregate-and-prune')->assertExitCode(0);
+
+    expect(Visit::query()->count())->toBe(1)
+        ->and(Visit::query()->first()->tenant_id)->toBe(2);
+});

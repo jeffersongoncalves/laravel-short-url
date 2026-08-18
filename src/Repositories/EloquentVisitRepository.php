@@ -55,9 +55,12 @@ class EloquentVisitRepository implements VisitRepository
         ];
     }
 
-    public function prune(DateTimeInterface $before): int
+    public function prune(DateTimeInterface $before, int|string|null $tenantId = null): int
     {
-        return Visit::query()->where('visited_at', '<', $before)->delete();
+        return Visit::query()
+            ->where('visited_at', '<', $before)
+            ->when($tenantId !== null, fn ($query) => $query->where('tenant_id', $tenantId))
+            ->delete();
     }
 
     /**

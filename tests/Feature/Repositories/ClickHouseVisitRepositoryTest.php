@@ -58,6 +58,16 @@ it('prunes and returns the number of rows removed', function () {
     Http::assertSent(fn ($request) => str_contains($request->body(), 'ALTER TABLE') && str_contains($request->body(), 'DELETE WHERE'));
 });
 
+it('scopes the prune condition to a tenant when given', function () {
+    Http::fakeSequence()
+        ->push('{"c":1}')
+        ->push('');
+
+    (new ClickHouseVisitRepository)->prune(now()->subDays(30), 7);
+
+    Http::assertSent(fn ($request) => str_contains($request->body(), 'tenant_id = 7'));
+});
+
 it('throws when the clickhouse http request fails', function () {
     Http::fake(['*clickhouse.test*' => Http::response('boom', 500)]);
 

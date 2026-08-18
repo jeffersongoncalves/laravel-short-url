@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\VisitRepository;
+use JeffersonGoncalves\LaravelShortUrl\Tenancy\PlanLimits;
 
 /**
  * Folds a day's raw visits into short_url_daily_stats, then prunes visit
@@ -19,12 +20,12 @@ class AggregateAndPruneCommand extends Command
 
     protected $description = 'Aggregate visits into daily_stats and prune expired visit rows.';
 
-    public function handle(VisitRepository $visits): int
+    public function handle(VisitRepository $visits, PlanLimits $planLimits): int
     {
         $date = $this->option('date') ? Carbon::parse((string) $this->option('date')) : Carbon::yesterday();
 
         $this->aggregate($visits, $date);
-        $this->prune($visits);
+        $this->prune($visits, $planLimits);
 
         return self::SUCCESS;
     }
@@ -69,10 +70,30 @@ class AggregateAndPruneCommand extends Command
         }
     }
 
-    protected function prune(VisitRepository $visits): void
+    protected function prune(VisitRepository $visits, PlanLimits $planLimits): void
     {
-        $retentionDays = (int) config('short-url.tracking.retention_days', 400);
+        $defaultRetentionDays = (int) config('short-url.tracking.retention_days', 400);
 
-        $visits->prune(now()->subDays($retentionDays));
+        if (! config('short-url.tenancy.enabled', false)) {
+            $visits->prune(now()->subDays($defaultRetentionDays));
+
+            return;
+        }
+
+        // No tenant registry of our own — tenant ids come straight off the
+        // visits table, whatever the host has been stamping rows with.
+        $prefix = config('short-url.table_prefix', 'short_url_');
+        $tenantIds = DB::table($prefix.'visits')->whereNotNull('tenant_id')->distinct()->pluck('tenant_id');
+
+        foreach ($tenantIds as $tenantId) {
+            $retentionDays = $planLimits->limitForTenant('retention_days', $tenantId) ?? $defaultRetentionDays;
+            $visits->prune(now()->subDays($retentionDays), $tenantId);
+        }
+
+        // ponytail: rows with no tenant_id (pre-tenancy data) are left
+        // alone here — $tenantId=null on prune() means "no filter, delete
+        // everything past cutoff", which would wipe every tenant's rows
+        // too. Not worth a dedicated "tenant_id IS NULL" prune mode for
+        // what should only be leftover pre-migration rows.
     }
 }

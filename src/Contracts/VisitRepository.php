@@ -22,5 +22,10 @@ interface VisitRepository
      */
     public function aggregate(int $shortUrlId, DateTimeInterface $from, DateTimeInterface $to): array;
 
-    public function prune(DateTimeInterface $before): int;
+    /**
+     * Deletes visit rows older than $before. When $tenantId is given, only
+     * that tenant's rows are pruned — used to apply a per-tenant plan
+     * retention window instead of the package-wide default.
+     */
+    public function prune(DateTimeInterface $before, int|string|null $tenantId = null): int;
 }

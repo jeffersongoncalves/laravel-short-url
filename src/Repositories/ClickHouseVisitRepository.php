@@ -86,17 +86,23 @@ class ClickHouseVisitRepository implements VisitRepository
         return $result;
     }
 
-    public function prune(DateTimeInterface $before): int
+    public function prune(DateTimeInterface $before, int|string|null $tenantId = null): int
     {
         $table = $this->table();
+        $condition = "visited_at < '".$before->format('Y-m-d H:i:s')."'";
+
+        if ($tenantId !== null) {
+            $condition .= ' AND tenant_id = '.$this->quoteValue($tenantId);
+        }
+
         $countRows = $this->executeAndDecode(
-            "SELECT count() AS c FROM {$table} WHERE visited_at < '".$before->format('Y-m-d H:i:s')."' FORMAT JSONEachRow"
+            "SELECT count() AS c FROM {$table} WHERE {$condition} FORMAT JSONEachRow"
         );
         $count = (int) ($countRows[0]['c'] ?? 0);
 
         // ALTER TABLE ... DELETE is ClickHouse's mutation-based delete —
         // async by design, unlike a normal SQL DELETE.
-        $this->execute("ALTER TABLE {$table} DELETE WHERE visited_at < '".$before->format('Y-m-d H:i:s')."'");
+        $this->execute("ALTER TABLE {$table} DELETE WHERE {$condition}");
 
         return $count;
     }

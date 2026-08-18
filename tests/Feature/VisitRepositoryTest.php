@@ -68,3 +68,15 @@ it('prunes visits older than a given date', function () {
     expect($pruned)->toBe(1)
         ->and(Visit::query()->count())->toBe(1);
 });
+
+it('only prunes the given tenant\'s old visits when a tenant id is passed', function () {
+    $shortUrl = ShortUrl::factory()->create();
+    makeVisit($shortUrl, ['visited_at' => now()->subDays(400), 'tenant_id' => 1]);
+    makeVisit($shortUrl, ['visited_at' => now()->subDays(400), 'tenant_id' => 2]);
+
+    $pruned = app(VisitRepository::class)->prune(now()->subDays(30), 1);
+
+    expect($pruned)->toBe(1)
+        ->and(Visit::query()->count())->toBe(1)
+        ->and(Visit::query()->first()->tenant_id)->toBe(2);
+});

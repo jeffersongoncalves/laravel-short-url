@@ -49,15 +49,34 @@ class PlanLimits
             return null;
         }
 
-        $limits = config("short-url.tenancy.plans.{$this->currentPlan()}", []);
+        return $this->limitForTenant($key, $this->tenants->currentId());
+    }
+
+    /**
+     * Same as limit(), but for an arbitrary tenant rather than "the
+     * current one" — for scheduled commands (aggregate-and-prune) that
+     * loop over every tenant instead of running inside one tenant's
+     * request context.
+     */
+    public function limitForTenant(string $key, int|string|null $tenantId): ?int
+    {
+        if (! config('short-url.tenancy.enabled', false)) {
+            return null;
+        }
+
+        $limits = config('short-url.tenancy.plans.'.$this->planForTenant($tenantId), []);
 
         return $limits[$key] ?? null;
     }
 
     public function currentPlan(): string
     {
+        return $this->planForTenant($this->tenants->currentId());
+    }
+
+    protected function planForTenant(int|string|null $tenantId): string
+    {
         $resolver = config('short-url.tenancy.plan_resolver');
-        $tenantId = $this->tenants->currentId();
 
         if ($tenantId !== null && is_callable($resolver)) {
             return (string) $resolver($tenantId);

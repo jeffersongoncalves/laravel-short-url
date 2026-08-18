@@ -102,7 +102,7 @@ it('never lets a tracking failure escape the stage', function () {
                 return [];
             }
 
-            public function prune(DateTimeInterface $before): int
+            public function prune(DateTimeInterface $before, int|string|null $tenantId = null): int
             {
                 return 0;
             }
