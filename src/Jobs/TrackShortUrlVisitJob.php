@@ -29,7 +29,8 @@ use Throwable;
  *     short_url_id: int, tenant_id: int|null, ip: string, user_agent: string,
  *     referer_url: string|null, browser_language: string|null, app_host: string,
  *     is_bot: bool, device_type: string|null, operating_system: string|null,
- *     is_qr_scan: bool, utm_source: string|null, utm_medium: string|null,
+ *     is_qr_scan: bool, is_vpn: bool, is_proxy: bool, is_tor: bool, is_datacenter: bool,
+ *     utm_source: string|null, utm_medium: string|null,
  *     utm_campaign: string|null, utm_term: string|null, utm_content: string|null,
  *     selected_variant: string|null, matched_rule_index: int|null,
  *     response_time_ms: int|null, track_ip_address: bool, track_browser: bool,
@@ -70,12 +71,13 @@ class TrackShortUrlVisitJob implements ShouldQueue
         $ua = $this->userAgentAttributes($payload);
         $referer = $this->refererAttributes($payload);
 
+        // No ip_hash to dedupe against (untracked/analytics-only) — can't
+        // tell repeat visitors apart, so every visit counts as unique.
         $isUnique = ! $isBot
-            && $ipAttributes['ip_hash']
-            && ! Visit::query()
+            && (! $ipAttributes['ip_hash'] || ! Visit::query()
                 ->where('short_url_id', $payload['short_url_id'])
                 ->where('ip_hash', $ipAttributes['ip_hash'])
-                ->exists();
+                ->exists());
 
         $attributes = array_merge($ipAttributes, $ua, $referer, [
             'short_url_id' => $payload['short_url_id'],
@@ -91,7 +93,7 @@ class TrackShortUrlVisitJob implements ShouldQueue
             'isp' => $geo->isp,
             'asn' => $geo->asn,
             'browser_language' => $payload['track_browser_language'] ? $payload['browser_language'] : null,
-            'user_agent_hash' => hash('sha256', $payload['user_agent']),
+            'user_agent_hash' => config('short-url.compliance.analytics_only', false) ? null : hash('sha256', $payload['user_agent']),
             'utm_source' => $payload['utm_source'],
             'utm_medium' => $payload['utm_medium'],
             'utm_campaign' => $payload['utm_campaign'],
@@ -99,6 +101,10 @@ class TrackShortUrlVisitJob implements ShouldQueue
             'utm_content' => $payload['utm_content'],
             'is_qr_scan' => $payload['is_qr_scan'],
             'is_bot' => $isBot,
+            'is_vpn' => $payload['is_vpn'],
+            'is_proxy' => $payload['is_proxy'],
+            'is_tor' => $payload['is_tor'],
+            'is_datacenter' => $payload['is_datacenter'],
             'selected_variant' => $payload['selected_variant'],
             'matched_rule_index' => $payload['matched_rule_index'],
             'response_time_ms' => $payload['response_time_ms'],
@@ -131,7 +137,9 @@ class TrackShortUrlVisitJob implements ShouldQueue
      */
     protected function ipAttributes(array $payload): array
     {
-        if (! $payload['track_ip_address'] || $payload['ip'] === '') {
+        $analyticsOnly = (bool) config('short-url.compliance.analytics_only', false);
+
+        if (! $payload['track_ip_address'] || $payload['ip'] === '' || $analyticsOnly) {
             return ['ip_hash' => null, 'ip_anonymized' => null, 'ip_version' => null];
         }
 

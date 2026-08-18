@@ -5,25 +5,32 @@ namespace JeffersonGoncalves\LaravelShortUrl;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Gate;
 use JeffersonGoncalves\LaravelShortUrl\Console\Commands\AggregateAndPruneCommand;
+use JeffersonGoncalves\LaravelShortUrl\Console\Commands\CheckSafeBrowsingCommand;
 use JeffersonGoncalves\LaravelShortUrl\Console\Commands\SyncCountersCommand;
 use JeffersonGoncalves\LaravelShortUrl\Console\Commands\VerifyDomainsCommand;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\DnsVerifier;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\GeoIpDriver;
+use JeffersonGoncalves\LaravelShortUrl\Contracts\SafeBrowsingChecker;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\SettingsRepository;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\StatsAggregator;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\TargetingResolver;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\VisitRepository;
+use JeffersonGoncalves\LaravelShortUrl\Contracts\VpnDetectionDriver;
 use JeffersonGoncalves\LaravelShortUrl\Dns\NativeDnsVerifier;
 use JeffersonGoncalves\LaravelShortUrl\GeoIp\HeadersGeoIpDriver;
 use JeffersonGoncalves\LaravelShortUrl\GeoIp\IpApiGeoIpDriver;
 use JeffersonGoncalves\LaravelShortUrl\GeoIp\MaxMindGeoIpDriver;
 use JeffersonGoncalves\LaravelShortUrl\Models\CustomDomain;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
+use JeffersonGoncalves\LaravelShortUrl\Observers\AuditLogObserver;
 use JeffersonGoncalves\LaravelShortUrl\Observers\CustomDomainObserver;
 use JeffersonGoncalves\LaravelShortUrl\Observers\ShortUrlObserver;
 use JeffersonGoncalves\LaravelShortUrl\Policies\ShortUrlPolicy;
 use JeffersonGoncalves\LaravelShortUrl\Registries\FilterTypeRegistry;
 use JeffersonGoncalves\LaravelShortUrl\Repositories\EloquentVisitRepository;
+use JeffersonGoncalves\LaravelShortUrl\Security\GoogleSafeBrowsingChecker;
+use JeffersonGoncalves\LaravelShortUrl\Security\IpApiVpnDetectionDriver;
+use JeffersonGoncalves\LaravelShortUrl\Security\ProxyCheckVpnDetectionDriver;
 use JeffersonGoncalves\LaravelShortUrl\Services\CounterBuffer;
 use JeffersonGoncalves\LaravelShortUrl\Settings\DatabaseSettingsRepository;
 use JeffersonGoncalves\LaravelShortUrl\Stats\EloquentStatsAggregator;
@@ -46,13 +53,16 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
                 'create_short_url_visits_table',
                 'create_short_url_daily_stats_table',
                 'create_short_url_custom_domains_table',
+                'create_short_url_audit_logs_table',
             ])
             ->hasTranslations()
+            ->hasViews()
             ->hasRoute('web')
             ->hasCommands([
                 SyncCountersCommand::class,
                 AggregateAndPruneCommand::class,
                 VerifyDomainsCommand::class,
+                CheckSafeBrowsingCommand::class,
             ]);
     }
 
@@ -76,11 +86,19 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
             'maxmind' => new MaxMindGeoIpDriver,
             default => new HeadersGeoIpDriver($app['request']),
         });
+
+        $this->app->singleton(SafeBrowsingChecker::class, GoogleSafeBrowsingChecker::class);
+
+        $this->app->bind(VpnDetectionDriver::class, fn () => match (config('short-url.security.vpn_detection.driver', 'ip_api')) {
+            'proxycheck_io' => new ProxyCheckVpnDetectionDriver,
+            default => new IpApiVpnDetectionDriver,
+        });
     }
 
     public function packageBooted(): void
     {
         ShortUrl::observe(ShortUrlObserver::class);
+        ShortUrl::observe(AuditLogObserver::class);
         CustomDomain::observe(CustomDomainObserver::class);
 
         Gate::policy(ShortUrl::class, ShortUrlPolicy::class);
@@ -98,6 +116,10 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
 
             if (config('short-url.domains.enabled', false)) {
                 $schedule->command(VerifyDomainsCommand::class)->cron('0 */6 * * *');
+            }
+
+            if (config('short-url.security.safe_browsing.enabled', false)) {
+                $schedule->command(CheckSafeBrowsingCommand::class)->daily();
             }
         });
     }

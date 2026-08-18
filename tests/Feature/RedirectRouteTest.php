@@ -23,8 +23,8 @@ it('returns 404 for a missing short url', function () {
     $this->get('http://short.test/does-not-exist')->assertNotFound();
 });
 
-it('returns 404 for an expired short url without a fallback', function () {
+it('renders the branded expired page for an expired short url without a fallback', function () {
     ShortUrl::factory()->create(['url_key' => 'exp1234', 'expires_at' => now()->subDay()]);
 
-    $this->get('http://short.test/exp1234')->assertNotFound();
+    $this->get('http://short.test/exp1234')->assertStatus(410);
 });

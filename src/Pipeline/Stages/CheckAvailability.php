@@ -22,7 +22,7 @@ class CheckAvailability
                 return new RedirectResponse($shortUrl->expiration_redirect_url);
             }
 
-            throw new NotFoundHttpException;
+            return response()->view('short-url::expired', [], 410);
         }
 
         if ($shortUrl->max_visits !== null && $shortUrl->total_visits >= $shortUrl->max_visits) {

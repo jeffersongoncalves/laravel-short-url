@@ -29,11 +29,13 @@ it('blocks a disabled short url', function () {
     (new CheckAvailability)(checkAvailabilityContext($shortUrl), fn (RedirectContext $c) => $c);
 })->throws(NotFoundHttpException::class);
 
-it('blocks an expired short url without a fallback redirect', function () {
+it('renders the branded expired page when there is no fallback redirect', function () {
     $shortUrl = ShortUrl::factory()->create(['expires_at' => now()->subDay()]);
 
-    (new CheckAvailability)(checkAvailabilityContext($shortUrl), fn (RedirectContext $c) => $c);
-})->throws(NotFoundHttpException::class);
+    $response = (new CheckAvailability)(checkAvailabilityContext($shortUrl), fn (RedirectContext $c) => $c);
+
+    expect($response->getStatusCode())->toBe(410);
+});
 
 it('redirects to the fallback url when expired with expiration_redirect_url set', function () {
     $shortUrl = ShortUrl::factory()->create([

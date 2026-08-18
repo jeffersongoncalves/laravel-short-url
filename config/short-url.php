@@ -139,7 +139,94 @@ return [
         'max_verification_failures' => env('SHORT_URL_DOMAIN_MAX_FAILURES', 10),
     ],
 
-    // Additional keys for future phases (QR, security, multi-tenancy, API,
+    /*
+    |--------------------------------------------------------------------------
+    | Branding
+    |--------------------------------------------------------------------------
+    |
+    | Shown on the package's own interstitial pages (password prompt,
+    | warning, expired link).
+    |
+    */
+    'branding' => [
+        'site_name' => env('SHORT_URL_SITE_NAME', env('APP_NAME', 'Laravel')),
+        'logo_url' => env('SHORT_URL_LOGO_URL'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Security
+    |--------------------------------------------------------------------------
+    |
+    | - password.unlock_ttl_minutes: how long a correct password unlocks a
+    |   protected link for, per browser session.
+    | - warning.token_ttl_minutes: how long the warning interstitial's
+    |   signed "continue" link stays valid.
+    | - rate_limit: per-IP throttling on the redirect route itself. Off by
+    |   default — most installs sit behind an edge/CDN limiter already.
+    | - vpn_detection.mode: off|flag|block. "flag" only records is_vpn/
+    |   is_proxy/... on the visit; "block" also 403s the redirect.
+    | - safe_browsing: scans a short url's destination (and, for split/
+    |   rules types, every variant/rule destination) via Google Safe
+    |   Browsing. mode "sync" blocks create/update on an unsafe verdict;
+    |   "async" saves immediately and updates safe_browsing_status once the
+    |   check completes.
+    |
+    */
+    'security' => [
+        'password' => [
+            'unlock_ttl_minutes' => env('SHORT_URL_PASSWORD_UNLOCK_TTL', 60),
+        ],
+
+        'warning' => [
+            'token_ttl_minutes' => env('SHORT_URL_WARNING_TOKEN_TTL', 30),
+        ],
+
+        'rate_limit' => [
+            'enabled' => env('SHORT_URL_RATE_LIMIT_ENABLED', false),
+            'max_attempts' => env('SHORT_URL_RATE_LIMIT_MAX_ATTEMPTS', 60),
+            'decay_seconds' => env('SHORT_URL_RATE_LIMIT_DECAY_SECONDS', 60),
+        ],
+
+        'vpn_detection' => [
+            'mode' => env('SHORT_URL_VPN_DETECTION_MODE', 'off'),
+            'driver' => env('SHORT_URL_VPN_DETECTION_DRIVER', 'ip_api'),
+            'cache_ttl' => env('SHORT_URL_VPN_DETECTION_CACHE_TTL', 3600),
+            'proxycheck_api_key' => env('SHORT_URL_PROXYCHECK_API_KEY'),
+        ],
+
+        'safe_browsing' => [
+            'enabled' => env('SHORT_URL_SAFE_BROWSING_ENABLED', false),
+            'mode' => env('SHORT_URL_SAFE_BROWSING_MODE', 'sync'),
+            'api_key' => env('SHORT_URL_SAFE_BROWSING_API_KEY'),
+            'bypass' => env('SHORT_URL_SAFE_BROWSING_BYPASS', false),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Compliance (LGPD/GDPR)
+    |--------------------------------------------------------------------------
+    |
+    | - analytics_only: when true, visits are aggregated into daily_stats
+    |   as usual but no personally-identifiable fields (ip_hash,
+    |   ip_anonymized, user_agent_hash) are stored on the raw visit row.
+    |
+    */
+    'compliance' => [
+        'analytics_only' => env('SHORT_URL_ANALYTICS_ONLY', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Audit Log
+    |--------------------------------------------------------------------------
+    */
+    'audit' => [
+        'enabled' => env('SHORT_URL_AUDIT_ENABLED', true),
+    ],
+
+    // Additional keys for future phases (QR, multi-tenancy, API,
     // webhooks, ...) will be added here in later phases.
 
 ];
