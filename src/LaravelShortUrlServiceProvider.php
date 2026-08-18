@@ -72,30 +72,41 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
 {
     public static string $name = 'laravel-short-url';
 
+    /**
+     * Dependency order, not alphabetical — bio_pages must run before
+     * bio_links since the latter has a foreign key to it. Real installs
+     * get this order for free (vendor:publish timestamps files in this
+     * array order), but tests/TestCase.php's own migration loader also
+     * reads this list to reproduce the same order.
+     *
+     * @var array<int, string>
+     */
+    public const MIGRATIONS = [
+        'create_short_urls_table',
+        'create_short_url_settings_table',
+        'create_short_url_visits_table',
+        'create_short_url_daily_stats_table',
+        'create_short_url_custom_domains_table',
+        'create_short_url_audit_logs_table',
+        'create_short_url_api_keys_table',
+        'create_short_url_webhooks_table',
+        'create_short_url_webhook_deliveries_table',
+        'create_short_url_conversions_table',
+        'create_short_url_alerts_table',
+        'create_short_url_pixels_table',
+        'create_short_url_folders_table',
+        'create_short_url_tags_table',
+        'create_short_url_utm_templates_table',
+        'create_short_url_bio_pages_table',
+        'create_short_url_bio_links_table',
+    ];
+
     public function configurePackage(Package $package): void
     {
         $package
             ->name(static::$name)
             ->hasConfigFile('short-url')
-            ->hasMigrations([
-                'create_short_urls_table',
-                'create_short_url_settings_table',
-                'create_short_url_visits_table',
-                'create_short_url_daily_stats_table',
-                'create_short_url_custom_domains_table',
-                'create_short_url_audit_logs_table',
-                'create_short_url_api_keys_table',
-                'create_short_url_webhooks_table',
-                'create_short_url_webhook_deliveries_table',
-                'create_short_url_conversions_table',
-                'create_short_url_alerts_table',
-                'create_short_url_pixels_table',
-                'create_short_url_folders_table',
-                'create_short_url_tags_table',
-                'create_short_url_utm_templates_table',
-                'create_short_url_bio_pages_table',
-                'create_short_url_bio_links_table',
-            ])
+            ->hasMigrations(static::MIGRATIONS)
             ->hasTranslations()
             ->hasViews()
             ->hasRoutes(['web', 'api'])

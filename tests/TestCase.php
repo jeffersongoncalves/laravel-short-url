@@ -75,8 +75,20 @@ abstract class TestCase extends Orchestra
             mkdir($tempPath, 0755, true);
         }
 
-        foreach (glob($stubsPath.'/*.php.stub') as $stub) {
-            copy($stub, $tempPath.'/'.basename(str_replace('.php.stub', '.php', $stub)));
+        // Wipe leftovers from a previous run/naming scheme — loadMigrationsFrom()
+        // below loads every file in this directory, stale or not.
+        foreach (glob($tempPath.'/*.php') as $leftover) {
+            unlink($leftover);
+        }
+
+        // Numeric prefixes reproduce LaravelShortUrlServiceProvider::MIGRATIONS
+        // order (e.g. bio_pages before bio_links, an FK dependency) — plain
+        // stub filenames would sort alphabetically instead and break on any
+        // database that enforces foreign keys strictly (MySQL, Postgres).
+        foreach (LaravelShortUrlServiceProvider::MIGRATIONS as $index => $migration) {
+            $stub = $stubsPath.'/'.$migration.'.php.stub';
+            $prefix = str_pad((string) $index, 4, '0', STR_PAD_LEFT);
+            copy($stub, $tempPath.'/'.$prefix.'_'.$migration.'.php');
         }
 
         $this->loadMigrationsFrom($tempPath);
