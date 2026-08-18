@@ -31,11 +31,7 @@ class ResolveShortUrl
 
     protected function find(string $urlKey): ?ShortUrl
     {
-        // F1 supports only root-level (non custom-domain) short URLs.
-        return ShortUrl::query()
-            ->whereNull('custom_domain_id')
-            ->where('url_key', $urlKey)
-            ->first();
+        return ShortUrl::findByKey($urlKey);
     }
 
     public static function cacheKey(string $host, string $urlKey): string

@@ -14,5 +14,9 @@ if ($prefix = config('short-url.route.prefix')) {
 }
 
 $router->group(function (): void {
-    Route::get('/{urlKey}', RedirectController::class)->name('short-url.redirect');
+    if (config('short-url.route.fallback', false)) {
+        Route::fallback(RedirectController::class)->name('short-url.redirect');
+    } else {
+        Route::get('/{urlKey}', RedirectController::class)->name('short-url.redirect');
+    }
 });

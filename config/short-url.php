@@ -30,6 +30,11 @@ return [
         'prefix' => env('SHORT_URL_ROUTE_PREFIX', ''),
         'domain' => env('SHORT_URL_ROUTE_DOMAIN'),
         'middleware' => ['web'],
+
+        // When true, the redirect route is registered as the application's
+        // fallback route instead of an explicit `/{urlKey}` route, so host
+        // app routes always take precedence over short URL keys.
+        'fallback' => env('SHORT_URL_ROUTE_FALLBACK', false),
     ],
 
     /*

@@ -33,20 +33,17 @@ it('hides the password hash from array output', function () {
     expect($shortUrl->toArray())->not->toHaveKey('password_hash');
 });
 
-it('builds a short url fluently', function () {
-    $shortUrl = ShortUrl::make()
-        ->to('https://example.com')
-        ->key('fluent1')
-        ->title('My link')
-        ->maxVisits(10)
-        ->singleUse();
+it('finds a short url by key, ignoring custom-domain-scoped ones', function () {
+    ShortUrl::factory()->create(['url_key' => 'findme1']);
+    ShortUrl::factory()->create(['url_key' => 'findme1', 'custom_domain_id' => 1]);
 
-    $shortUrl->save();
+    expect(ShortUrl::findByKey('findme1')?->custom_domain_id)->toBeNull()
+        ->and(ShortUrl::findByKey('missing-key'))->toBeNull();
+});
 
-    expect($shortUrl->fresh())
-        ->destination_url->toBe('https://example.com')
-        ->url_key->toBe('fluent1')
-        ->title->toBe('My link')
-        ->max_visits->toBe(10)
-        ->single_use->toBeTrue();
+it('scopes to enabled short urls only', function () {
+    ShortUrl::factory()->create(['url_key' => 'en1', 'is_enabled' => true]);
+    ShortUrl::factory()->create(['url_key' => 'en2', 'is_enabled' => false]);
+
+    expect(ShortUrl::query()->enabled()->pluck('url_key')->all())->toBe(['en1']);
 });

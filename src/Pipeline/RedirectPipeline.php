@@ -20,6 +20,7 @@ class RedirectPipeline
         Stages\CheckAvailability::class,
         Stages\RequirePassword::class,
         Stages\ShowWarning::class,
+        Stages\ResolveDestination::class,
         Stages\BuildFinalUrl::class,
         Stages\RenderInterstitial::class,
         Stages\Respond::class,

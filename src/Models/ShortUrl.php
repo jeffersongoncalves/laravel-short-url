@@ -2,7 +2,7 @@
 
 namespace JeffersonGoncalves\LaravelShortUrl\Models;
 
-use DateTimeInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -139,86 +139,21 @@ class ShortUrl extends Model
     }
 
     /**
-     * Start building a new short URL using the fluent API, e.g.:
-     * ShortUrl::make()->to($url)->key($key)->expiresAt($date)->save().
+     * F1 only resolves root-level (non custom-domain) short URLs.
      */
-    public static function make(): self
+    public static function findByKey(string $urlKey): ?self
     {
-        return new self([
-            'is_enabled' => true,
-            'redirect_status_code' => (int) config('short-url.redirect.default_status_code', 302),
-            'forward_query_params' => true,
-            'destination_type' => 'single',
-        ]);
+        return static::query()
+            ->whereNull('custom_domain_id')
+            ->where('url_key', $urlKey)
+            ->first();
     }
 
-    public function to(string $url): static
+    /**
+     * @param  Builder<self>  $query
+     */
+    public function scopeEnabled($query): void
     {
-        $this->destination_url = $url;
-
-        return $this;
-    }
-
-    public function key(?string $key): static
-    {
-        $this->url_key = $key;
-
-        return $this;
-    }
-
-    public function title(?string $title): static
-    {
-        $this->title = $title;
-
-        return $this;
-    }
-
-    public function notes(?string $notes): static
-    {
-        $this->notes = $notes;
-
-        return $this;
-    }
-
-    public function expiresAt(DateTimeInterface|string|null $date): static
-    {
-        $this->expires_at = $date === null ? null : Carbon::parse($date);
-
-        return $this;
-    }
-
-    public function maxVisits(?int $maxVisits): static
-    {
-        $this->max_visits = $maxVisits;
-
-        return $this;
-    }
-
-    public function enabled(bool $enabled = true): static
-    {
-        $this->is_enabled = $enabled;
-
-        return $this;
-    }
-
-    public function redirectStatusCode(int $code): static
-    {
-        $this->redirect_status_code = $code;
-
-        return $this;
-    }
-
-    public function singleUse(bool $singleUse = true): static
-    {
-        $this->single_use = $singleUse;
-
-        return $this;
-    }
-
-    public function forwardQueryParams(bool $forward = true): static
-    {
-        $this->forward_query_params = $forward;
-
-        return $this;
+        $query->where('is_enabled', true);
     }
 }
