@@ -13,12 +13,48 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         php: [8.3, 8.4]
-        stability: [prefer-stable]
+        laravel: [11.*, 12.*]
+        database: [sqlite, mysql, pgsql]
+        include:
+          - laravel: 11.*
+            testbench: 9.*
+          - laravel: 12.*
+            testbench: 10.*
 
-    name: PHP ${{ matrix.php }} - ${{ matrix.stability }}
+    name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} - ${{ matrix.database }}
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: true
+          MYSQL_DATABASE: testing
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+        if: matrix.database == 'mysql'
+
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: testing
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+        if: matrix.database == 'pgsql'
 
     steps:
       - name: Checkout code
@@ -28,11 +64,13 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, pdo_mysql, pdo_pgsql
           coverage: none
 
       - name: Install dependencies
-        run: composer update --${{ matrix.stability }} --prefer-dist --no-interaction
+        run: |
+          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
+          composer update --prefer-stable --prefer-dist --no-interaction
 
       - name: Run Pint
         run: vendor/bin/pint --test
@@ -40,5 +78,28 @@ jobs:
       - name: Run PHPStan
         run: vendor/bin/phpstan analyse
 
-      - name: Run Tests
+      - name: Run Tests (sqlite)
+        if: matrix.database == 'sqlite'
+        run: vendor/bin/pest
+
+      - name: Run Tests (mysql)
+        if: matrix.database == 'mysql'
+        env:
+          SHORT_URL_TEST_DB_DRIVER: mysql
+          SHORT_URL_TEST_DB_HOST: 127.0.0.1
+          SHORT_URL_TEST_DB_PORT: 3306
+          SHORT_URL_TEST_DB_DATABASE: testing
+          SHORT_URL_TEST_DB_USERNAME: root
+          SHORT_URL_TEST_DB_PASSWORD: ''
+        run: vendor/bin/pest
+
+      - name: Run Tests (pgsql)
+        if: matrix.database == 'pgsql'
+        env:
+          SHORT_URL_TEST_DB_DRIVER: pgsql
+          SHORT_URL_TEST_DB_HOST: 127.0.0.1
+          SHORT_URL_TEST_DB_PORT: 5432
+          SHORT_URL_TEST_DB_DATABASE: testing
+          SHORT_URL_TEST_DB_USERNAME: postgres
+          SHORT_URL_TEST_DB_PASSWORD: postgres
         run: vendor/bin/pest

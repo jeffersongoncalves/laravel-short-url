@@ -1,122 +1,147 @@
 # Laravel Short URL
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/jeffersongoncalves/laravel-short-url.svg?style=flat-square)](https://packagist.org/packages/jeffersongoncalves/laravel-short-url)
-[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/jeffersongoncalves/laravel-short-url/tests.yml?branch=master&label=tests&style=flat-square)](https://github.com/jeffersongoncalves/laravel-short-url/actions?query=workflow%3Atests+branch%3Amaster)
-[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/jeffersongoncalves/laravel-short-url/fix-php-code-style-issues.yml?branch=master&label=code%20style&style=flat-square)](https://github.com/jeffersongoncalves/laravel-short-url/actions?query=workflow%3A%22Fix+PHP+code+style+issues%22+branch%3Amaster)
+[![Tests](https://img.shields.io/github/actions/workflow/status/jeffersongoncalves/laravel-short-url/tests.yml?branch=master&label=tests&style=flat-square)](https://github.com/jeffersongoncalves/laravel-short-url/actions/workflows/tests.yml)
 [![Total Downloads](https://img.shields.io/packagist/dt/jeffersongoncalves/laravel-short-url.svg?style=flat-square)](https://packagist.org/packages/jeffersongoncalves/laravel-short-url)
-[![License](https://img.shields.io/packagist/l/jeffersongoncalves/laravel-short-url.svg?style=flat-square)](LICENSE.md)
 
-A framework-agnostic-within-Laravel package for creating and redirecting short URLs. It owns the model, migrations,
-key generation and an extensible redirect pipeline. It has **no UI** of its own — pair it with
-[`jeffersongoncalves/filament-short-url`](https://github.com/jeffersongoncalves/filament-short-url) for a Filament
-admin panel, or build your own UI on top of it.
+Motor headless de encurtamento de URLs para Laravel. Sem nenhuma dependência de Filament — consumido pelo pacote de UI [`jeffersongoncalves/filament-short-url`](https://github.com/jeffersongoncalves/filament-short-url), mas funciona sozinho em qualquer aplicação Laravel via Facade, API REST ou console.
 
-## Status: Phase F1
+## Por que este pacote
 
-This is the foundational phase. It ships:
+- **Alto throughput.** O pipeline de redirecionamento é uma cadeia de estágios independentes e testáveis (`Illuminate\Pipeline`), com cache do link resolvido e escrita de analytics assíncrona — nenhuma falha de integração externa (GeoIP, Safe Browsing, VPN, webhooks) derruba um redirect.
+- **Orientado a contratos.** Toda peça substituível — driver de analytics, verificador de DNS, gerador de QR Code, checker de Safe Browsing, detector de VPN — é uma interface em `src/Contracts/`, com uma implementação padrão e registries extensíveis (`AnalyticsDriverRegistry`, `DeepLinkRegistry`, `PixelProviderRegistry`, `FilterTypeRegistry`, `ImporterDriverRegistry`).
+- **Dependências mínimas.** Só `spatie/laravel-package-tools` é obrigatório. GeoIP (MaxMind), QR Code (`endroid/qr-code`), multi-tenancy (`stancl/tenancy`) e Redis (`predis/predis`) são todos opcionais — o pacote funciona perfeitamente sem eles, cada integração é guardada por `class_exists`/feature-flag.
+- **Multi-idioma.** pt_BR, en e es prontos — nenhuma string hardcoded fora de `resources/lang`.
 
-- The `short_urls` and `short_url_settings` tables and the `ShortUrl` model.
-- A Base62 key generator with collision retry and a reserved-word blacklist.
-- A cache-backed, extensible redirect pipeline (`GET /{urlKey}`) covering resolution, availability checks
-  (enabled/expired/deactivated/max visits), query-param forwarding and the final redirect response.
-- Stub pipeline stages (rate limiting, bot/VPN detection, password protection, warning page, interstitial,
-  tracking dispatch) ready to be implemented in later phases without changing the pipeline's public contract.
-
-Analytics, split/rule/geo-fence destination types, QR codes, multi-tenancy, a public API and webhooks are **not**
-part of F1 and will land in future releases.
-
-## Installation
-
-You can install the package via composer:
+## Instalação
 
 ```bash
 composer require jeffersongoncalves/laravel-short-url
 ```
 
-Publish the config file and migrations:
+Publique config, migrations e traduções:
 
 ```bash
-php artisan vendor:publish --tag="laravel-short-url-config"
-php artisan vendor:publish --tag="laravel-short-url-migrations"
+php artisan vendor:publish --tag="short-url-config"
+php artisan vendor:publish --tag="short-url-migrations"
+php artisan vendor:publish --tag="short-url-translations"
 php artisan migrate
 ```
 
-## Configuration
-
-All keys accept an `.env` override. See `config/short-url.php` after publishing for full comments.
-
-```env
-SHORT_URL_TABLE_PREFIX=short_url_
-SHORT_URL_ROUTE_PREFIX=
-SHORT_URL_ROUTE_DOMAIN=
-SHORT_URL_KEY_LENGTH=7
-SHORT_URL_DEFAULT_STATUS_CODE=302
-SHORT_URL_CACHE_ENABLED=true
-SHORT_URL_CACHE_TTL=3600
-SHORT_URL_CACHE_PREFIX=short_url
-```
-
-| Key | Default | Description |
-|---|---|---|
-| `table_prefix` | `short_url_` | Prefix for tables created by this package. |
-| `route.prefix` | `''` | URL prefix for the redirect route. Empty means root-level (`/{urlKey}`). |
-| `route.domain` | `null` | Restrict the redirect route to a specific domain. |
-| `route.middleware` | `['web']` | Middleware applied to the redirect route. |
-| `key.length` | `7` | Length of auto-generated Base62 keys. |
-| `key.blacklist` | `[admin, api, ...]` | Reserved words that can never be used/generated as a key. |
-| `redirect.default_status_code` | `302` | Default redirect status code for new short URLs. |
-| `cache.enabled` | `true` | Whether resolved short URLs are cached. |
-| `cache.ttl` | `3600` | Cache TTL in seconds. |
-| `cache.prefix` | `short_url` | Cache key prefix. |
-
-## Usage
-
-### Creating a short URL
+## Uso rápido
 
 ```php
-use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
-use JeffersonGoncalves\LaravelShortUrl\Services\KeyGenerator;
+use JeffersonGoncalves\LaravelShortUrl\Facades\ShortUrl;
 
-$shortUrl = ShortUrl::make()
-    ->to('https://example.com/some/very/long/path')
-    ->key(app(KeyGenerator::class)->generate()) // omit to leave url_key null and set it yourself
-    ->title('My campaign link')
+// Criar
+$link = ShortUrl::create(['destination_url' => 'https://example.com/produto']);
+
+// Fluente
+$link = ShortUrl::destination('https://example.com/produto')
+    ->key('promo25')
+    ->expiresAt(now()->addDays(30))
     ->maxVisits(1000)
-    ->expiresAt(now()->addMonth());
+    ->password('segredo')
+    ->create();
 
-$shortUrl->save();
+// Resolver
+$link = ShortUrl::resolve('promo25');
 ```
 
-### Redirecting
+O redirecionamento em si já funciona sem nenhuma linha de código extra: qualquer requisição em `GET /{urlKey}` passa pelo pipeline completo.
 
-The package registers a catch-all `GET /{urlKey}` route (name: `short-url.redirect`) that resolves the short URL,
-checks availability (enabled, not expired, not deactivated, under `max_visits`), builds the final destination URL
-(forwarding the query string when `forward_query_params` is enabled) and issues the redirect using the link's
-`redirect_status_code`.
+## O pipeline de redirecionamento
 
-## Testing
+```
+ResolveHost → RateLimit → ResolveShortUrl(cache) → DetectBot → DetectVpnProxy
+→ CheckAvailability → RequirePassword → ShowWarning → ResolveDestination
+→ BuildFinalUrl → RenderInterstitial → Respond → DispatchTracking
+```
+
+Cada estágio pode curto-circuitar retornando uma `Response` diretamente (senha incorreta, aviso de destino, link expirado, VPN bloqueada, limite de plano). O link resolvido fica em cache (`{host}:{key}`) e a invalidação acontece automaticamente em `saved`/`deleted`.
+
+## Principais funcionalidades
+
+| Área | Descrição |
+| --- | --- |
+| **Redirecionamento** | Base62 configurável, blacklist, unicidade por domínio, `301\|302\|307\|308`, `single_use`, `max_visits`, expiração com redirect de fallback. |
+| **Analytics** | Visitas assíncronas (`TrackShortUrlVisitJob`), parser de UA com fast-path, GeoIP (headers CDN / MaxMind / ip-api), detecção de bot, anonimização de IP (IPv4 /24, IPv6 /48), agregação diária + retenção configurável. |
+| **Segmentação** | Regras `and\|or` aninhadas por dispositivo, plataforma, navegador, país, idioma, referer, UTM, janela de data/hora, contagem de visitas, VPN, bot. Rotação A/B ponderada com significância estatística (teste Z). |
+| **Domínios próprios** | Verificação DNS (TXT/CNAME/A), roteamento por domínio, wildcard, redirect de raiz. |
+| **Segurança** | Senha com bcrypt, página de aviso com token assinado, Google Safe Browsing (bloqueio síncrono ou assíncrono), detecção de VPN/proxy (flag ou bloqueio 403), rate limiting, auditoria completa (before/after). |
+| **Conformidade** | Retenção configurável, exportação/exclusão de dados por sujeito (LGPD), modo somente-analytics (sem PII). |
+| **API REST** | `/api/short-url/v1` (desativada por padrão), autenticação por API key com abilities, rate limit por chave, CRUD de links, bulk (até 500), stats, visits, domínios, webhooks, conversões. |
+| **Webhooks** | HMAC-SHA256 + timestamp anti-replay, retry 10s/60s/300s, replay manual, desativação automática após falhas consecutivas. |
+| **Analytics externo** | GA4 Measurement Protocol e Plausible prontos; `AnalyticsDriverRegistry::extend()` para adicionar qualquer outro. |
+| **Alertas** | Detecção de anomalia por z-score contra baseline de 7 dias, notificações por e-mail, banco, broadcast, Slack, Discord, Telegram, Teams. |
+| **QR Code** | SVG/PNG/PDF/EPS (via `endroid/qr-code`, opcional), tracking de escaneamento (`?source=qr`). |
+| **Deep links & pixels** | Abertura de app mobile por scheme customizado, 10 apps pré-cadastrados, AASA/assetlinks opcionais, pixels de retargeting (Meta, Google Ads, TikTok, GA4) com banner de consentimento opcional. |
+| **Organização** | Pastas hierárquicas, tags, templates de UTM, arquivamento. |
+| **Importação/Exportação** | CSV nativo, Bitly API v4 como referência de importador por provedor, exportação CSV via API. |
+| **ClickHouse** | Driver alternativo de `VisitRepository` via HTTP nativo do ClickHouse — mesma interface, sem dependência de cliente. |
+| **Multi-tenancy** | Feature-flag total. Escopo automático via `stancl/tenancy` (se instalado) ou config manual. Limites de plano (`links_per_month`, `domains`) configuráveis. |
+| **Link-in-bio** | Páginas públicas em `/bio/{handle}` com blocos (link, texto, imagem, vídeo) e tracking de clique por bloco. |
+
+## Configuração
+
+Toda opção fica documentada inline em `config/short-url.php`. Os grupos principais:
+
+`table_prefix`, `route`, `key`, `redirect`, `cache`, `tracking` (inclui `clickhouse`), `domains`, `branding`, `security` (senha, aviso, rate limit, VPN, safe browsing), `compliance`, `audit`, `api`, `webhooks`, `analytics`, `conversions`, `alerts`, `notifications`, `qr`, `deep_links`, `pixels`, `importers`, `tenancy`, `bio`.
+
+Settings também podem ser lidas/gravadas em runtime via `Contracts\SettingsRepository`, com schema declarativo (`schema()`) para montar formulários dinâmicos no plugin de UI.
+
+## Comandos artisan
+
+Todos se auto-registram no agendador (`packageBooted()`), respeitando os toggles de config:
+
+| Comando | Frequência |
+| --- | --- |
+| `short-url:sync-counters` | a cada minuto (com buffering de contadores ativo) |
+| `short-url:aggregate-and-prune` | diário 02:00 |
+| `short-url:verify-domains` | a cada 6h |
+| `short-url:check-safe-browsing` | diário |
+| `short-url:detect-anomalies` | horário |
+| `short-url:send-scheduled-reports` | diário |
+| `short-url:prune-webhook-deliveries` | semanal |
+| `short-url:import {driver} {source}` | manual |
+
+## Superfície pública (contrato com o plugin de UI)
+
+```php
+ShortUrl::create(array $attributes): ShortUrlModel
+ShortUrl::destination(string $url): ShortUrlBuilder
+ShortUrl::resolve(string $key, ?string $host = null): ?ShortUrlModel
+
+// src/Contracts/
+VisitRepository, GeoIpDriver, VpnDetectionDriver, AnalyticsDriver,
+SafeBrowsingChecker, QrCodeBuilder, StatsAggregator, TargetingResolver,
+DnsVerifier, SettingsRepository, WebhookDispatcher, ImporterDriver,
+ConversionApiDispatcher
+
+// src/Registries/
+FilterTypeRegistry, AnalyticsDriverRegistry, DeepLinkRegistry,
+PixelProviderRegistry, ImporterDriverRegistry
+```
+
+## Testes
 
 ```bash
-composer test
+composer test        # Pest
+composer analyse      # PHPStan (Larastan) nível 5+
+composer format        # Pint
 ```
 
-## Changelog
+O CI roda a suíte contra PHP 8.3/8.4 × Laravel 11/12 × PostgreSQL/MySQL/SQLite. Um teste de arquitetura (`Tests\Architecture\NoFilamentTest`) garante que nenhum arquivo importa `Filament\`.
 
-Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
+## Segurança
 
-## Contributing
+Encontrou uma vulnerabilidade de segurança? Veja [SECURITY.md](.github/SECURITY.md).
 
-Please see [CONTRIBUTING](.github/CONTRIBUTING.md) for details.
-
-## Security Vulnerabilities
-
-Please review [our security policy](../../security/policy) on how to report security vulnerabilities.
-
-## Credits
+## Créditos
 
 - [Jefferson Gonçalves](https://github.com/jeffersongoncalves)
-- [All Contributors](../../contributors)
+- [Todos os contribuidores](../../contributors)
 
-## License
+## Licença
 
-The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
+MIT. Veja [LICENSE.md](LICENSE.md) para mais informações.
