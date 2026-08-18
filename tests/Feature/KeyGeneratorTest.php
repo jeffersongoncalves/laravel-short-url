@@ -26,7 +26,7 @@ it('regenerates a key when the first attempt is blacklisted', function () {
 });
 
 it('regenerates a key when there is a collision', function () {
-    ShortUrl::factory()->create(['url_key' => 'dup1234', 'custom_domain_id' => null]);
+    ShortUrl::factory()->create(['url_key' => 'dup1234']);
     Str::createRandomStringsUsingSequence(['dup1234', 'unique1']);
 
     $key = app(KeyGenerator::class)->generate();

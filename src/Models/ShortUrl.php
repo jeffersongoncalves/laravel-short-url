@@ -19,7 +19,7 @@ use JeffersonGoncalves\LaravelShortUrl\Tenancy\BelongsToTenant;
  * @property int|null $team_id
  * @property int|null $user_id
  * @property int|null $folder_id
- * @property int|null $custom_domain_id
+ * @property int $custom_domain_id
  * @property string $url_key
  * @property string $destination_url
  * @property string $destination_type
@@ -142,19 +142,18 @@ class ShortUrl extends Model
     }
 
     /**
-     * Resolves a key at the app's own domain (custom_domain_id null) unless
-     * a verified custom domain id is given, in which case the key is
-     * scoped to that domain instead.
+     * Resolves a key at the app's own domain (custom_domain_id 0) unless a
+     * verified custom domain id is given, in which case the key is scoped
+     * to that domain instead. Accepts null from callers as shorthand for
+     * "no custom domain" — 0 is the actual sentinel stored in the column
+     * (never nullable: NULL isn't unique-constraint-safe across drivers).
      */
     public static function findByKey(string $urlKey, ?int $customDomainId = null): ?self
     {
-        $query = static::query()->where('url_key', $urlKey);
-
-        $customDomainId === null
-            ? $query->whereNull('custom_domain_id')
-            : $query->where('custom_domain_id', $customDomainId);
-
-        return $query->first();
+        return static::query()
+            ->where('url_key', $urlKey)
+            ->where('custom_domain_id', $customDomainId ?? 0)
+            ->first();
     }
 
     /**

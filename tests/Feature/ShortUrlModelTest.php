@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 
@@ -37,8 +38,30 @@ it('finds a short url by key, ignoring custom-domain-scoped ones', function () {
     ShortUrl::factory()->create(['url_key' => 'findme1']);
     ShortUrl::factory()->create(['url_key' => 'findme1', 'custom_domain_id' => 1]);
 
-    expect(ShortUrl::findByKey('findme1')?->custom_domain_id)->toBeNull()
+    expect(ShortUrl::findByKey('findme1')?->custom_domain_id)->toBe(0)
         ->and(ShortUrl::findByKey('missing-key'))->toBeNull();
+});
+
+it('enforces url_key uniqueness for two root-level (no custom domain) links', function () {
+    // Regression test: custom_domain_id used to be nullable, and NULL is
+    // never equal to NULL in a unique index (Postgres/MySQL/SQLite alike),
+    // so unique(custom_domain_id, url_key) silently never engaged for the
+    // common case. It's now a NOT NULL column defaulting to sentinel 0.
+    ShortUrl::factory()->create(['url_key' => 'dupe1234']);
+
+    expect(fn () => ShortUrl::factory()->create(['url_key' => 'dupe1234']))
+        ->toThrow(QueryException::class);
+});
+
+it('allows the same url_key to exist once per custom domain and once at the root', function () {
+    ShortUrl::factory()->create(['url_key' => 'shared01', 'custom_domain_id' => 1]);
+
+    $rootLink = ShortUrl::factory()->create(['url_key' => 'shared01']);
+
+    // The DB default only takes effect on INSERT — refresh() to read back
+    // what actually landed in the column rather than the in-memory model,
+    // which never had custom_domain_id set at all.
+    expect($rootLink->refresh()->custom_domain_id)->toBe(0);
 });
 
 it('scopes to enabled short urls only', function () {

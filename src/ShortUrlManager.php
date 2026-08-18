@@ -14,6 +14,14 @@ class ShortUrlManager
     {
         app(PlanLimits::class)->assertCanCreateLink();
 
+        // custom_domain_id is NOT NULL (sentinel 0 = no custom domain) —
+        // coerce an explicit null the same way an omitted key already
+        // resolves, so callers can pass either without hitting a NOT NULL
+        // constraint violation.
+        if (array_key_exists('custom_domain_id', $attributes) && $attributes['custom_domain_id'] === null) {
+            $attributes['custom_domain_id'] = 0;
+        }
+
         $attributes['url_key'] ??= $this->keyGenerator->generate($attributes['custom_domain_id'] ?? null);
 
         $attributes += [

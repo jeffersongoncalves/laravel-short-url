@@ -33,7 +33,7 @@ class KeyGenerator
     {
         return ShortUrl::query()
             ->where('url_key', $key)
-            ->where('custom_domain_id', $customDomainId)
+            ->where('custom_domain_id', $customDomainId ?? 0)
             ->exists();
     }
 }
