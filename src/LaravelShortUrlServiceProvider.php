@@ -5,7 +5,12 @@ namespace JeffersonGoncalves\LaravelShortUrl;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Gate;
 use JeffersonGoncalves\LaravelShortUrl\Analytics\Ga4AnalyticsDriver;
+use JeffersonGoncalves\LaravelShortUrl\Analytics\MatomoAnalyticsDriver;
+use JeffersonGoncalves\LaravelShortUrl\Analytics\MixpanelAnalyticsDriver;
 use JeffersonGoncalves\LaravelShortUrl\Analytics\PlausibleAnalyticsDriver;
+use JeffersonGoncalves\LaravelShortUrl\Analytics\PostHogAnalyticsDriver;
+use JeffersonGoncalves\LaravelShortUrl\Analytics\SegmentAnalyticsDriver;
+use JeffersonGoncalves\LaravelShortUrl\Analytics\UmamiAnalyticsDriver;
 use JeffersonGoncalves\LaravelShortUrl\Console\Commands\AggregateAndPruneCommand;
 use JeffersonGoncalves\LaravelShortUrl\Console\Commands\CheckSafeBrowsingCommand;
 use JeffersonGoncalves\LaravelShortUrl\Console\Commands\DetectAnomaliesCommand;
@@ -25,8 +30,11 @@ use JeffersonGoncalves\LaravelShortUrl\Contracts\TargetingResolver;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\VisitRepository;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\VpnDetectionDriver;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\WebhookDispatcher;
+use JeffersonGoncalves\LaravelShortUrl\Conversions\GoogleEnhancedConversionsDispatcher;
+use JeffersonGoncalves\LaravelShortUrl\Conversions\LinkedInCapiDispatcher;
 use JeffersonGoncalves\LaravelShortUrl\Conversions\MetaCapiDispatcher;
 use JeffersonGoncalves\LaravelShortUrl\Conversions\NullConversionApiDispatcher;
+use JeffersonGoncalves\LaravelShortUrl\Conversions\TikTokCapiDispatcher;
 use JeffersonGoncalves\LaravelShortUrl\Dns\NativeDnsVerifier;
 use JeffersonGoncalves\LaravelShortUrl\GeoIp\HeadersGeoIpDriver;
 use JeffersonGoncalves\LaravelShortUrl\GeoIp\IpApiGeoIpDriver;
@@ -144,6 +152,9 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
 
         $this->app->bind(ConversionApiDispatcher::class, fn () => match (config('short-url.conversions.driver', 'none')) {
             'meta' => new MetaCapiDispatcher,
+            'google' => new GoogleEnhancedConversionsDispatcher,
+            'tiktok' => new TikTokCapiDispatcher,
+            'linkedin' => new LinkedInCapiDispatcher,
             default => new NullConversionApiDispatcher,
         });
     }
@@ -163,6 +174,11 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
         $analyticsDrivers = $this->app->make(AnalyticsDriverRegistry::class);
         $analyticsDrivers->extend('ga4', fn () => new Ga4AnalyticsDriver);
         $analyticsDrivers->extend('plausible', fn () => new PlausibleAnalyticsDriver);
+        $analyticsDrivers->extend('posthog', fn () => new PostHogAnalyticsDriver);
+        $analyticsDrivers->extend('matomo', fn () => new MatomoAnalyticsDriver);
+        $analyticsDrivers->extend('umami', fn () => new UmamiAnalyticsDriver);
+        $analyticsDrivers->extend('mixpanel', fn () => new MixpanelAnalyticsDriver);
+        $analyticsDrivers->extend('segment', fn () => new SegmentAnalyticsDriver);
 
         $importers = $this->app->make(ImporterDriverRegistry::class);
         $importers->extend('csv', fn () => $this->app->make(CsvImporterDriver::class));

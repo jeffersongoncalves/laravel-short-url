@@ -293,6 +293,30 @@ return [
             'api_host' => env('SHORT_URL_PLAUSIBLE_API_HOST', 'https://plausible.io'),
             'domain' => env('SHORT_URL_PLAUSIBLE_DOMAIN'),
         ],
+        'posthog' => [
+            'enabled' => env('SHORT_URL_ANALYTICS_POSTHOG_ENABLED', false),
+            'host' => env('SHORT_URL_POSTHOG_HOST', 'https://us.i.posthog.com'),
+            'api_key' => env('SHORT_URL_POSTHOG_API_KEY'),
+        ],
+        'matomo' => [
+            'enabled' => env('SHORT_URL_ANALYTICS_MATOMO_ENABLED', false),
+            'url' => env('SHORT_URL_MATOMO_URL'),
+            'site_id' => env('SHORT_URL_MATOMO_SITE_ID'),
+            'token_auth' => env('SHORT_URL_MATOMO_TOKEN_AUTH'),
+        ],
+        'umami' => [
+            'enabled' => env('SHORT_URL_ANALYTICS_UMAMI_ENABLED', false),
+            'host' => env('SHORT_URL_UMAMI_HOST'),
+            'website_id' => env('SHORT_URL_UMAMI_WEBSITE_ID'),
+        ],
+        'mixpanel' => [
+            'enabled' => env('SHORT_URL_ANALYTICS_MIXPANEL_ENABLED', false),
+            'token' => env('SHORT_URL_MIXPANEL_TOKEN'),
+        ],
+        'segment' => [
+            'enabled' => env('SHORT_URL_ANALYTICS_SEGMENT_ENABLED', false),
+            'write_key' => env('SHORT_URL_SEGMENT_WRITE_KEY'),
+        ],
     ],
 
     /*
@@ -311,6 +335,23 @@ return [
         'meta' => [
             'pixel_id' => env('SHORT_URL_META_PIXEL_ID'),
             'access_token' => env('SHORT_URL_META_ACCESS_TOKEN'),
+        ],
+
+        'google' => [
+            'customer_id' => env('SHORT_URL_GOOGLE_ADS_CUSTOMER_ID'),
+            'developer_token' => env('SHORT_URL_GOOGLE_ADS_DEVELOPER_TOKEN'),
+            'access_token' => env('SHORT_URL_GOOGLE_ADS_ACCESS_TOKEN'),
+            'conversion_action_id' => env('SHORT_URL_GOOGLE_ADS_CONVERSION_ACTION_ID'),
+        ],
+
+        'tiktok' => [
+            'pixel_code' => env('SHORT_URL_TIKTOK_PIXEL_CODE'),
+            'access_token' => env('SHORT_URL_TIKTOK_ACCESS_TOKEN'),
+        ],
+
+        'linkedin' => [
+            'access_token' => env('SHORT_URL_LINKEDIN_ACCESS_TOKEN'),
+            'conversion_id' => env('SHORT_URL_LINKEDIN_CONVERSION_ID'),
         ],
     ],
 

@@ -72,7 +72,7 @@ Each stage can short-circuit by returning a `Response` directly (wrong password,
 | **Compliance** | Configurable retention, per-subject data export/deletion (LGPD/GDPR), analytics-only mode (no PII stored). |
 | **REST API** | `/api/short-url/v1` (disabled by default), API-key auth with abilities, per-key rate limiting, link CRUD, bulk create (up to 500), stats, visits, domains, webhooks, conversions. |
 | **Webhooks** | HMAC-SHA256 + anti-replay timestamp, retries at 10s/60s/300s, manual replay, auto-disable after consecutive failures. |
-| **External analytics** | GA4 Measurement Protocol and Plausible built in; `AnalyticsDriverRegistry::extend()` to add any other provider. |
+| **External analytics** | GA4, Plausible, PostHog, Matomo, Umami, Mixpanel, and Segment built in; `AnalyticsDriverRegistry::extend()` to add any other provider. |
 | **Alerts** | Z-score anomaly detection against a 7-day baseline, notifications via mail, database, broadcast, Slack, Discord, Telegram, Teams. |
 | **QR codes** | SVG/PNG/PDF/EPS export (via the optional `endroid/qr-code`), scan tracking (`?source=qr`). |
 | **Deep links & pixels** | Mobile app opening via custom URL scheme, 10 pre-registered apps, optional AASA/assetlinks serving, retargeting pixels (Meta, Google Ads, TikTok, GA4) with an optional consent banner. |
