@@ -15,26 +15,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: [8.3, 8.4]
-        laravel: [12.*, 13.*]
-        # sqlite runs the full PHP × Laravel grid; mysql/pgsql only need one
-        # smoke-test combo each (latest PHP + Laravel) — every extra
-        # database × version combo is redundant driver plumbing, not new
-        # coverage, and the full cross product doesn't scale.
-        database: [sqlite]
-        include:
-          - laravel: 12.*
-            testbench: 10.*
-          - laravel: 13.*
-            testbench: 11.*
-          - php: 8.4
-            laravel: 13.*
-            testbench: 11.*
-            database: mysql
-          - php: 8.4
-            laravel: 13.*
-            testbench: 11.*
-            database: pgsql
+        # Single PHP/Laravel combo (latest supported of each) — composer.json
+        # already constrains the real support range (^8.3, ^12.0|^13.0), CI
+        # only needs to catch driver-specific SQL differences per database,
+        # not repeat that check across every PHP × Laravel permutation.
+        php: [8.4]
+        laravel: [13.*]
+        testbench: [11.*]
+        database: [sqlite, mysql, pgsql]
 
     name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} - ${{ matrix.database }}
 

@@ -145,7 +145,7 @@ composer analyse  # PHPStan (Larastan) level 6
 composer format   # Pint
 ```
 
-CI runs the full PHP 8.3/8.4 × Laravel 12/13 grid against SQLite, plus one smoke-test job each against MySQL and PostgreSQL. An architecture test (`Tests\Architecture\NoFilamentTest`) guarantees no file imports `Filament\`.
+CI runs against PHP 8.4 / Laravel 13 on SQLite, MySQL, and PostgreSQL. An architecture test (`Tests\Architecture\NoFilamentTest`) guarantees no file imports `Filament\`.
 
 ## Security
 
