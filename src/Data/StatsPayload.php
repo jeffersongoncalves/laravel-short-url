@@ -18,6 +18,7 @@ readonly class StatsPayload
      * @param  array<string, int>  $languageStats
      * @param  array<string, int>  $variantStats
      * @param  array<int, int>  $hourlyStats
+     * @param  array<string, float>  $variantSignificance  Z-score of each non-control variant's visit share vs. the control (highest-count variant).
      */
     public function __construct(
         public int $totalVisits = 0,
@@ -37,5 +38,6 @@ readonly class StatsPayload
         public array $languageStats = [],
         public array $variantStats = [],
         public array $hourlyStats = [],
+        public array $variantSignificance = [],
     ) {}
 }

@@ -5,6 +5,7 @@ namespace JeffersonGoncalves\LaravelShortUrl\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -139,14 +140,19 @@ class ShortUrl extends Model
     }
 
     /**
-     * F1 only resolves root-level (non custom-domain) short URLs.
+     * Resolves a key at the app's own domain (custom_domain_id null) unless
+     * a verified custom domain id is given, in which case the key is
+     * scoped to that domain instead.
      */
-    public static function findByKey(string $urlKey): ?self
+    public static function findByKey(string $urlKey, ?int $customDomainId = null): ?self
     {
-        return static::query()
-            ->whereNull('custom_domain_id')
-            ->where('url_key', $urlKey)
-            ->first();
+        $query = static::query()->where('url_key', $urlKey);
+
+        $customDomainId === null
+            ? $query->whereNull('custom_domain_id')
+            : $query->where('custom_domain_id', $customDomainId);
+
+        return $query->first();
     }
 
     /**
@@ -155,5 +161,10 @@ class ShortUrl extends Model
     public function scopeEnabled($query): void
     {
         $query->where('is_enabled', true);
+    }
+
+    public function customDomain(): BelongsTo
+    {
+        return $this->belongsTo(CustomDomain::class, 'custom_domain_id');
     }
 }

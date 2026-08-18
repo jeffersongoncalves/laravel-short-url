@@ -3,6 +3,7 @@
 namespace JeffersonGoncalves\LaravelShortUrl\Pipeline;
 
 use Illuminate\Http\Request;
+use JeffersonGoncalves\LaravelShortUrl\Models\CustomDomain;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -10,7 +11,11 @@ class RedirectContext
 {
     public ?string $host = null;
 
+    public ?CustomDomain $customDomain = null;
+
     public ?ShortUrl $shortUrl = null;
+
+    public ?string $destinationUrl = null;
 
     public string $finalUrl = '';
 

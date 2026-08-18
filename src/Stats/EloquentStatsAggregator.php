@@ -9,6 +9,7 @@ use JeffersonGoncalves\LaravelShortUrl\Contracts\StatsAggregator;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\VisitRepository;
 use JeffersonGoncalves\LaravelShortUrl\Data\StatsPayload;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
+use JeffersonGoncalves\LaravelShortUrl\Targeting\SignificanceCalculator;
 use RuntimeException;
 
 /**
@@ -81,6 +82,7 @@ class EloquentStatsAggregator implements StatsAggregator
             languageStats: $totals['language_stats'],
             variantStats: $totals['variant_stats'],
             hourlyStats: $totals['hourly_stats'],
+            variantSignificance: $this->variantSignificance($totals['variant_stats']),
         );
     }
 
@@ -140,6 +142,38 @@ class EloquentStatsAggregator implements StatsAggregator
                 $totals[$key][$label] = ($totals[$key][$label] ?? 0) + $count;
             }
         }
+    }
+
+    /**
+     * @param  array<string, int>  $variantStats
+     * @return array<string, float>
+     */
+    protected function variantSignificance(array $variantStats): array
+    {
+        if (count($variantStats) < 2) {
+            return [];
+        }
+
+        arsort($variantStats);
+        $total = array_sum($variantStats);
+        $control = array_key_first($variantStats);
+        $controlCount = $variantStats[$control];
+
+        $significance = [];
+
+        foreach ($variantStats as $variant => $count) {
+            if ($variant === $control) {
+                continue;
+            }
+
+            $zScore = SignificanceCalculator::zScore($count, $total, $controlCount, $total);
+
+            if ($zScore !== null) {
+                $significance[$variant] = round($zScore, 4);
+            }
+        }
+
+        return $significance;
     }
 
     /**

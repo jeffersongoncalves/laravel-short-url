@@ -5,6 +5,7 @@ namespace JeffersonGoncalves\LaravelShortUrl\Pipeline\Stages;
 use Closure;
 use JeffersonGoncalves\LaravelShortUrl\Jobs\TrackShortUrlVisitJob;
 use JeffersonGoncalves\LaravelShortUrl\Pipeline\RedirectContext;
+use JeffersonGoncalves\LaravelShortUrl\Support\AcceptLanguage;
 use Throwable;
 
 /**
@@ -44,7 +45,7 @@ class DispatchTracking
             'ip' => (string) $request->ip(),
             'user_agent' => (string) $request->userAgent(),
             'referer_url' => $request->headers->get('referer'),
-            'browser_language' => $this->preferredLanguage($request->headers->get('accept-language')),
+            'browser_language' => AcceptLanguage::preferred($request->headers->get('accept-language')),
             'app_host' => (string) $context->host,
             'is_bot' => (bool) ($context->tracking['is_bot'] ?? false),
             'device_type' => $context->tracking['device_type'] ?? null,
@@ -67,16 +68,5 @@ class DispatchTracking
             'track_referer_url' => (bool) $shortUrl->track_referer_url,
             'track_browser_language' => (bool) $shortUrl->track_browser_language,
         ];
-    }
-
-    protected function preferredLanguage(?string $acceptLanguage): ?string
-    {
-        if (! $acceptLanguage) {
-            return null;
-        }
-
-        $first = explode(',', $acceptLanguage)[0];
-
-        return trim(explode(';', $first)[0]) ?: null;
     }
 }

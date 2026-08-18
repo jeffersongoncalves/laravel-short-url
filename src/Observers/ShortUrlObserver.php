@@ -3,6 +3,7 @@
 namespace JeffersonGoncalves\LaravelShortUrl\Observers;
 
 use Illuminate\Support\Facades\Cache;
+use JeffersonGoncalves\LaravelShortUrl\Models\CustomDomain;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 use JeffersonGoncalves\LaravelShortUrl\Pipeline\Stages\ResolveShortUrl;
 
@@ -21,6 +22,14 @@ class ShortUrlObserver
     protected function flush(ShortUrl $shortUrl): void
     {
         Cache::forget(ResolveShortUrl::cacheKey($this->resolveHost(), $shortUrl->url_key));
+
+        if ($shortUrl->custom_domain_id) {
+            $domain = CustomDomain::query()->find($shortUrl->custom_domain_id)?->domain;
+
+            if ($domain) {
+                Cache::forget(ResolveShortUrl::cacheKey($domain, $shortUrl->url_key));
+            }
+        }
     }
 
     protected function resolveHost(): string

@@ -122,7 +122,24 @@ return [
         'retention_days' => env('SHORT_URL_VISIT_RETENTION_DAYS', 400),
     ],
 
-    // Additional keys for future phases (targeting, QR, security,
-    // multi-tenancy, API, webhooks, ...) will be added here in later phases.
+    /*
+    |--------------------------------------------------------------------------
+    | Custom Domains
+    |--------------------------------------------------------------------------
+    |
+    | - enabled: resolve short urls against verified custom domains in
+    |   addition to the app's own host. Off by default: a plain install
+    |   never pays for the extra CustomDomain lookup on every redirect.
+    | - max_verification_failures: consecutive failed DNS checks (via
+    |   short-url:verify-domains) before a domain is auto-disabled.
+    |
+    */
+    'domains' => [
+        'enabled' => env('SHORT_URL_DOMAINS_ENABLED', false),
+        'max_verification_failures' => env('SHORT_URL_DOMAIN_MAX_FAILURES', 10),
+    ],
+
+    // Additional keys for future phases (QR, security, multi-tenancy, API,
+    // webhooks, ...) will be added here in later phases.
 
 ];
