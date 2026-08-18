@@ -84,7 +84,45 @@ return [
         'prefix' => env('SHORT_URL_CACHE_PREFIX', 'short_url'),
     ],
 
-    // Additional keys for future phases (analytics, targeting, QR, security,
+    /*
+    |--------------------------------------------------------------------------
+    | Tracking & Analytics
+    |--------------------------------------------------------------------------
+    |
+    | - driver: VisitRepository implementation. "eloquent" ships with the
+    |   package; "clickhouse" is added in a later phase.
+    | - trust_cdn_headers: read geo data from CDN-injected headers (see
+    |   HeadersGeoIpDriver) instead of/before calling an external service.
+    | - geoip.driver: headers|ip_api|maxmind.
+    | - counter_buffering: buffer visit counters in Redis instead of writing
+    |   the short_urls row on every redirect. Flushed by
+    |   short-url:sync-counters. Falls back to a queued direct DB increment
+    |   (IncrementVisitJob) when disabled or when Redis is unreachable.
+    | - ip_hash_salt: salt mixed into the stored IP hash. Rotate periodically;
+    |   rotating it breaks unique-visit continuity by design (LGPD).
+    | - retention_days: visit rows older than this are pruned by
+    |   short-url:aggregate-and-prune after being folded into daily_stats.
+    |
+    */
+    'tracking' => [
+        'driver' => env('SHORT_URL_VISIT_REPOSITORY', 'eloquent'),
+
+        'trust_cdn_headers' => env('SHORT_URL_TRUST_CDN_HEADERS', false),
+
+        'geoip' => [
+            'driver' => env('SHORT_URL_GEOIP_DRIVER', 'headers'),
+            'maxmind_database_path' => env('SHORT_URL_MAXMIND_DB_PATH'),
+        ],
+
+        'counter_buffering' => env('SHORT_URL_COUNTER_BUFFERING', false),
+        'redis_connection' => env('SHORT_URL_REDIS_CONNECTION', 'default'),
+
+        'ip_hash_salt' => env('SHORT_URL_IP_HASH_SALT'),
+
+        'retention_days' => env('SHORT_URL_VISIT_RETENTION_DAYS', 400),
+    ],
+
+    // Additional keys for future phases (targeting, QR, security,
     // multi-tenancy, API, webhooks, ...) will be added here in later phases.
 
 ];

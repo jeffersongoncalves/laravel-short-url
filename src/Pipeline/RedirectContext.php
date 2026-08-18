@@ -16,6 +16,14 @@ class RedirectContext
 
     public ?Response $response = null;
 
+    /**
+     * Free-form bag tracking-related stages fill in along the way (device
+     * type, bot flag, ...), consumed by DispatchTracking at the end.
+     *
+     * @var array<string, mixed>
+     */
+    public array $tracking = [];
+
     public function __construct(
         public readonly Request $request,
         public readonly string $urlKey,

@@ -28,6 +28,10 @@
         "pestphp/pest": "^4.0",
         "pestphp/pest-plugin-laravel": "^4.0"
     },
+    "suggest": {
+        "geoip2/geoip2": "Required to resolve visitor geolocation with the MaxMind GeoIP driver.",
+        "predis/predis": "Required for Redis-buffered visit counters when the phpredis extension isn't available."
+    },
     "autoload": {
         "psr-4": {
             "JeffersonGoncalves\\LaravelShortUrl\\": "src/",
