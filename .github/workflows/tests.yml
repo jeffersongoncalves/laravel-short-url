@@ -39,7 +39,6 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
-        if: matrix.database == 'mysql'
 
       postgres:
         image: postgres:16
@@ -54,7 +53,6 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
-        if: matrix.database == 'pgsql'
 
     steps:
       - name: Checkout code
