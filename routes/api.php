@@ -21,6 +21,7 @@ Route::prefix(config('short-url.api.prefix', 'api/short-url/v1'))
             Route::get('links', [LinkController::class, 'index'])->name('links.index');
             Route::get('links/{shortUrl:uuid}', [LinkController::class, 'show'])->name('links.show');
             Route::get('links/{shortUrl:uuid}/stats', [StatsController::class, 'show'])->name('links.stats');
+            Route::get('stats', [StatsController::class, 'global'])->name('stats.global');
             Route::get('links/{shortUrl:uuid}/visits', [VisitController::class, 'index'])->name('links.visits');
             Route::get('domains', [DomainController::class, 'index'])->name('domains.index');
             Route::get('webhooks', [WebhookController::class, 'index'])->name('webhooks.index');

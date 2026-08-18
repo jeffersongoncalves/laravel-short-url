@@ -93,7 +93,11 @@ Built-in analytics drivers: GA4, Plausible, PostHog, Matomo, Umami, Mixpanel, Se
 
 ### REST API
 
-Disabled by default (`short-url.api`). API-key auth with per-key abilities (`links:read`, `links:write`, `conversions:write`, ...). Base path `/api/short-url/v1`: `links` (CRUD, bulk create up to 500), `links/{uuid}/stats`, `links/{uuid}/visits`, `domains`, `webhooks`, `conversions`, `export/csv`. `links` accepts and returns `custom_domain_id`, `utm_source`/`utm_medium`/`utm_campaign`/`utm_term`/`utm_content`, `utm_template_id`, and a ready-to-use `short_url`.
+Disabled by default (`short-url.api`). API-key auth with per-key abilities (`links:read`, `links:write`, `conversions:write`, ...). Base path `/api/short-url/v1`: `links` (CRUD, bulk create up to 500), `links/{uuid}/stats`, `stats` (global breakdown, optionally `?folder_id=`/`?tag_id=`), `links/{uuid}/visits`, `domains`, `webhooks`, `conversions`, `export/csv`. `links` accepts and returns `custom_domain_id`, `utm_source`/`utm_medium`/`utm_campaign`/`utm_term`/`utm_content`, `utm_template_id`, and a ready-to-use `short_url`.
+
+### Cross-Link Stats
+
+Never compute your own aggregation over `short_url_visits`/`short_url_daily_stats` for a multi-link (dashboard) breakdown — `Contracts\StatsAggregator::forShortUrls(array $shortUrlIds)` does it (same contract as `for($shortUrl)`, just summed across the set). Resolving which links belong in the set — a folder, a tag, everything a tenant owns — is the caller's job via `ShortUrl`'s own tenant-scoped Eloquent query; the aggregator only does the math.
 
 ### Required UTM Enforcement
 

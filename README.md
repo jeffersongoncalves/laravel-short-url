@@ -136,7 +136,7 @@ Each stage can short-circuit by returning a `Response` directly (wrong password,
 | **Custom domains** | DNS verification (TXT/CNAME/A), per-domain routing, wildcard support, root redirect. |
 | **Security** | Bcrypt password protection, signed-token warning page, Google Safe Browsing (sync or async blocking), VPN/proxy detection (flag or 403 block), rate limiting, full audit trail (before/after). |
 | **Compliance** | Configurable retention (package-wide or per tenant plan), per-subject data export/deletion (LGPD/GDPR), analytics-only mode (no PII stored). |
-| **REST API** | `/api/short-url/v1` (disabled by default), API-key auth with abilities, per-key rate limiting, link CRUD (accepts and returns `custom_domain_id`, `utm_*`, `utm_template_id`, and a ready-to-use `short_url`), bulk create (up to 500), stats, visits, domains, webhooks, conversions. |
+| **REST API** | `/api/short-url/v1` (disabled by default), API-key auth with abilities, per-key rate limiting, link CRUD (accepts and returns `custom_domain_id`, `utm_*`, `utm_template_id`, and a ready-to-use `short_url`), bulk create (up to 500), per-link and global (`GET /stats`) breakdowns, visits, domains, webhooks, conversions. |
 | **Webhooks** | HMAC-SHA256 + anti-replay timestamp, retries at 10s/60s/300s, manual replay, auto-disable after consecutive failures. |
 | **External analytics** | GA4, Plausible, PostHog, Matomo, Umami, Mixpanel, and Segment built in; `AnalyticsDriverRegistry::extend()` to add any other provider. |
 | **Conversion tracking** | Server-to-server forwarding to Meta CAPI, Google Enhanced Conversions, TikTok Events API, and LinkedIn CAPI on `POST /conversions`. |
@@ -156,6 +156,15 @@ curl -X POST https://your-app.test/api/short-url/v1/conversions \
   -H "Authorization: Bearer {api-key}" \
   -d '{"url_key": "promo25", "event_name": "purchase", "value": 49.90, "currency": "USD"}'
 ```
+
+Global stats — a breakdown across every link a caller can see, not just one — power a dashboard's overview without the consumer computing any aggregation itself:
+
+```bash
+# All links, optionally narrowed to ?folder_id= or ?tag_id=, and ?from=/?to=
+curl https://your-app.test/api/short-url/v1/stats -H "Authorization: Bearer {api-key}"
+```
+
+Same `StatsAggregator` internally — `Contracts\StatsAggregator::forShortUrls(array $shortUrlIds)` is the programmatic equivalent, for anywhere that isn't the REST API (a Filament dashboard, a scheduled report). It only does the aggregation math; which links belong in the set is always resolved by the caller through `ShortUrl`'s own tenant-scoped query.
 
 ## Configuration
 

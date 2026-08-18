@@ -127,8 +127,18 @@ Visits are recorded asynchronously (`TrackShortUrlVisitJob`) after the redirect 
 ```php
 use JeffersonGoncalves\LaravelShortUrl\Contracts\StatsAggregator;
 
-$stats = app(StatsAggregator::class)->forShortUrl($shortUrl, from: now()->subDays(7), to: now());
+// Single link
+$stats = app(StatsAggregator::class)->for($shortUrl)->between(now()->subDays(7), now())->get();
+
+// Across a set of links (a folder, a tag, "everything this tenant owns") —
+// for a dashboard's global breakdown. Resolving *which* links belong in the
+// set is always the caller's job via ShortUrl's own tenant-scoped query;
+// StatsAggregator only does the aggregation math, never link selection.
+$ids = ShortUrl::query()->where('folder_id', $folder->id)->pluck('id')->all();
+$stats = app(StatsAggregator::class)->forShortUrls($ids)->between(now()->subDays(7), now())->get();
 ```
+
+`GET /api/short-url/v1/stats` (optionally `?folder_id=`/`?tag_id=`) is the REST equivalent — use it (or `forShortUrls()` directly) instead of querying `short_url_visits`/`short_url_daily_stats` yourself for a cross-link breakdown; a plugin or app built on this package should never compute its own aggregation.
 
 External forwarding is config-gated per provider under `short-url.analytics.*` (`enabled` + credentials) — GA4, Plausible, PostHog, Matomo, Umami, Mixpanel, Segment ship built in. Add another provider with `AnalyticsDriverRegistry::extend()` in a service provider's `boot()`, implementing `Contracts\AnalyticsDriver::record(array $visit): void`.
 

@@ -58,6 +58,30 @@ it('aggregates visit counts and per-dimension stats', function () {
         ->and($stats['country_stats'])->toBe(['BR' => 2, 'US' => 1]);
 });
 
+it('aggregates across a set of short url ids and excludes the rest', function () {
+    $linkA = ShortUrl::factory()->create();
+    $linkB = ShortUrl::factory()->create();
+    $excluded = ShortUrl::factory()->create();
+    makeVisit($linkA, ['country_code' => 'BR', 'is_bot' => false]);
+    makeVisit($linkB, ['country_code' => 'US', 'is_bot' => false]);
+    makeVisit($excluded, ['country_code' => 'FR', 'is_bot' => false]);
+
+    $stats = app(VisitRepository::class)->aggregateMany([$linkA->id, $linkB->id], now()->subDay(), now()->addDay());
+
+    expect($stats['visits_count'])->toBe(2)
+        ->and($stats['country_stats'])->toBe(['BR' => 1, 'US' => 1]);
+});
+
+it('returns empty totals from aggregateMany([]) without querying every visit', function () {
+    $shortUrl = ShortUrl::factory()->create();
+    makeVisit($shortUrl, ['country_code' => 'BR']);
+
+    $stats = app(VisitRepository::class)->aggregateMany([], now()->subDay(), now()->addDay());
+
+    expect($stats['visits_count'])->toBe(0)
+        ->and($stats['country_stats'])->toBe([]);
+});
+
 it('prunes visits older than a given date', function () {
     $shortUrl = ShortUrl::factory()->create();
     makeVisit($shortUrl, ['visited_at' => now()->subDays(400)]);

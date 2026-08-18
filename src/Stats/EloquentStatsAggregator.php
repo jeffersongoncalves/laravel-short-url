@@ -21,6 +21,11 @@ class EloquentStatsAggregator implements StatsAggregator
 {
     protected ?ShortUrl $shortUrl = null;
 
+    /**
+     * @var array<int, int>|null
+     */
+    protected ?array $shortUrlIds = null;
+
     protected ?DateTimeInterface $from = null;
 
     protected ?DateTimeInterface $to = null;
@@ -30,6 +35,15 @@ class EloquentStatsAggregator implements StatsAggregator
     public function for(ShortUrl $shortUrl): static
     {
         $this->shortUrl = $shortUrl;
+        $this->shortUrlIds = null;
+
+        return $this;
+    }
+
+    public function forShortUrls(array $shortUrlIds): static
+    {
+        $this->shortUrlIds = $shortUrlIds;
+        $this->shortUrl = null;
 
         return $this;
     }
@@ -44,8 +58,8 @@ class EloquentStatsAggregator implements StatsAggregator
 
     public function get(): StatsPayload
     {
-        if (! $this->shortUrl || ! $this->from || ! $this->to) {
-            throw new RuntimeException('Call for() and between() before get().');
+        if ((! $this->shortUrl && $this->shortUrlIds === null) || ! $this->from || ! $this->to) {
+            throw new RuntimeException('Call for() or forShortUrls(), and between(), before get().');
         }
 
         $totals = $this->emptyTotals();
@@ -61,8 +75,17 @@ class EloquentStatsAggregator implements StatsAggregator
 
         if ($to->greaterThanOrEqualTo($today)) {
             $liveFrom = $from->greaterThan($today) ? $from : $today;
-            $this->merge($totals, $this->visits->aggregate($this->shortUrl->id, $liveFrom, $to));
+            $liveTotals = $this->shortUrl
+                ? $this->visits->aggregate($this->shortUrl->id, $liveFrom, $to)
+                : $this->visits->aggregateMany($this->shortUrlIds ?? [], $liveFrom, $to);
+            $this->merge($totals, $liveTotals);
         }
+
+        // A "variant" label is only meaningful within the link it was
+        // defined on — mixing labels across unrelated links in a
+        // cross-link breakdown would conflate different A/B tests that
+        // happen to share a label, so both are left empty outside for().
+        $variantStats = $this->shortUrl ? $totals['variant_stats'] : [];
 
         return new StatsPayload(
             totalVisits: $totals['visits_count'],
@@ -80,9 +103,9 @@ class EloquentStatsAggregator implements StatsAggregator
             utmMediumStats: $totals['utm_medium_stats'],
             utmCampaignStats: $totals['utm_campaign_stats'],
             languageStats: $totals['language_stats'],
-            variantStats: $totals['variant_stats'],
+            variantStats: $variantStats,
             hourlyStats: $totals['hourly_stats'],
-            variantSignificance: $this->variantSignificance($totals['variant_stats']),
+            variantSignificance: $this->variantSignificance($variantStats),
         );
     }
 
@@ -94,7 +117,11 @@ class EloquentStatsAggregator implements StatsAggregator
         $prefix = config('short-url.table_prefix', 'short_url_');
 
         $rows = DB::table($prefix.'daily_stats')
-            ->where('short_url_id', $this->shortUrl->id)
+            ->when(
+                $this->shortUrl,
+                fn ($query) => $query->where('short_url_id', $this->shortUrl->id),
+                fn ($query) => $query->whereIn('short_url_id', $this->shortUrlIds ?: [0]),
+            )
             ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
             ->get();
 

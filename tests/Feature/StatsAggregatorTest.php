@@ -51,3 +51,45 @@ it('merges historical daily_stats with live visits from today', function () {
         ->and($payload->uniqueVisits)->toBe(4)
         ->and($payload->countryStats)->toBe(['BR' => 5]);
 });
+
+it('aggregates across a set of links via forShortUrls()', function () {
+    $linkA = ShortUrl::factory()->create();
+    $linkB = ShortUrl::factory()->create();
+    $excluded = ShortUrl::factory()->create();
+
+    Visit::query()->create([
+        'short_url_id' => $linkA->id, 'visited_at' => now(), 'utm_medium' => 'sms',
+        'is_bot' => false, 'ip_hash' => 'a1', 'created_at' => now(),
+    ]);
+    Visit::query()->create([
+        'short_url_id' => $linkB->id, 'visited_at' => now(), 'utm_medium' => 'email',
+        'is_bot' => false, 'ip_hash' => 'b1', 'created_at' => now(),
+    ]);
+    Visit::query()->create([
+        'short_url_id' => $excluded->id, 'visited_at' => now(), 'utm_medium' => 'agent',
+        'is_bot' => false, 'ip_hash' => 'c1', 'created_at' => now(),
+    ]);
+
+    $payload = app(StatsAggregator::class)
+        ->forShortUrls([$linkA->id, $linkB->id])
+        ->between(now()->subDay(), now())
+        ->get();
+
+    expect($payload->totalVisits)->toBe(2)
+        ->and($payload->utmMediumStats)->toBe(['sms' => 1, 'email' => 1]);
+});
+
+it('returns empty totals for forShortUrls([]) instead of aggregating everything', function () {
+    $shortUrl = ShortUrl::factory()->create();
+    Visit::query()->create([
+        'short_url_id' => $shortUrl->id, 'visited_at' => now(),
+        'is_bot' => false, 'ip_hash' => 'a1', 'created_at' => now(),
+    ]);
+
+    $payload = app(StatsAggregator::class)
+        ->forShortUrls([])
+        ->between(now()->subDay(), now())
+        ->get();
+
+    expect($payload->totalVisits)->toBe(0);
+});

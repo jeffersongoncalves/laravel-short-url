@@ -46,6 +46,27 @@ it('builds an aggregate payload from multiple queries', function () {
         ->and($result)->toHaveKey('hourly_stats');
 });
 
+it('builds an aggregate payload across multiple short_url_ids', function () {
+    Http::fakeSequence()
+        ->push('{"visits_count":9,"unique_visits_count":7,"qr_visits_count":2,"bot_visits_count":1}')
+        ->whenEmpty(Http::response(''));
+
+    $result = (new ClickHouseVisitRepository)->aggregateMany([1, 2, 3], now()->subDay(), now());
+
+    expect($result['visits_count'])->toBe(9);
+
+    Http::assertSent(fn ($request) => str_contains($request->body(), 'short_url_id IN (1,2,3)'));
+});
+
+it('returns empty totals from aggregateMany([]) without hitting clickhouse', function () {
+    Http::fake();
+
+    $result = (new ClickHouseVisitRepository)->aggregateMany([], now()->subDay(), now());
+
+    expect($result['visits_count'])->toBe(0);
+    Http::assertNothingSent();
+});
+
 it('prunes and returns the number of rows removed', function () {
     Http::fakeSequence()
         ->push('{"c":3}')

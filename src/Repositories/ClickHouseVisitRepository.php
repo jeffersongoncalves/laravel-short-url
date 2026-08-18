@@ -53,13 +53,59 @@ class ClickHouseVisitRepository implements VisitRepository
 
     public function aggregate(int $shortUrlId, DateTimeInterface $from, DateTimeInterface $to): array
     {
-        $table = $this->table();
         $range = sprintf(
             "short_url_id = %d AND visited_at BETWEEN '%s' AND '%s'",
             $shortUrlId,
             $from->format('Y-m-d H:i:s'),
             $to->format('Y-m-d H:i:s'),
         );
+
+        return $this->runAggregate($range);
+    }
+
+    public function aggregateMany(array $shortUrlIds, DateTimeInterface $from, DateTimeInterface $to): array
+    {
+        if ($shortUrlIds === []) {
+            return $this->emptyResult();
+        }
+
+        $range = sprintf(
+            "short_url_id IN (%s) AND visited_at BETWEEN '%s' AND '%s'",
+            implode(',', array_map('intval', $shortUrlIds)),
+            $from->format('Y-m-d H:i:s'),
+            $to->format('Y-m-d H:i:s'),
+        );
+
+        return $this->runAggregate($range);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function emptyResult(): array
+    {
+        $result = [
+            'visits_count' => 0,
+            'unique_visits_count' => 0,
+            'qr_visits_count' => 0,
+            'bot_visits_count' => 0,
+        ];
+
+        foreach (self::DIMENSION_COLUMNS as $key => $column) {
+            $result[$key] = [];
+        }
+
+        $result['hourly_stats'] = [];
+
+        return $result;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function runAggregate(string $range): array
+    {
+        $table = $this->table();
 
         $totals = $this->executeAndDecode(
             "SELECT

@@ -27,11 +27,36 @@ class EloquentVisitRepository implements VisitRepository
 
     public function aggregate(int $shortUrlId, DateTimeInterface $from, DateTimeInterface $to): array
     {
-        $visits = Visit::query()
-            ->where('short_url_id', $shortUrlId)
-            ->whereBetween('visited_at', [$from, $to])
-            ->get();
+        return $this->summarize(
+            Visit::query()->where('short_url_id', $shortUrlId)->whereBetween('visited_at', [$from, $to])->get()
+        );
+    }
 
+    public function aggregateMany(array $shortUrlIds, DateTimeInterface $from, DateTimeInterface $to): array
+    {
+        if ($shortUrlIds === []) {
+            return $this->summarize(new Collection);
+        }
+
+        return $this->summarize(
+            Visit::query()->whereIn('short_url_id', $shortUrlIds)->whereBetween('visited_at', [$from, $to])->get()
+        );
+    }
+
+    public function prune(DateTimeInterface $before, int|string|null $tenantId = null): int
+    {
+        return Visit::query()
+            ->where('visited_at', '<', $before)
+            ->when($tenantId !== null, fn ($query) => $query->where('tenant_id', $tenantId))
+            ->delete();
+    }
+
+    /**
+     * @param  Collection<int, Visit>  $visits
+     * @return array<string, mixed>
+     */
+    protected function summarize(Collection $visits): array
+    {
         return [
             'visits_count' => $visits->where('is_bot', false)->count(),
             'unique_visits_count' => $visits->where('is_bot', false)->unique('ip_hash')->count(),
@@ -55,19 +80,11 @@ class EloquentVisitRepository implements VisitRepository
         ];
     }
 
-    public function prune(DateTimeInterface $before, int|string|null $tenantId = null): int
-    {
-        return Visit::query()
-            ->where('visited_at', '<', $before)
-            ->when($tenantId !== null, fn ($query) => $query->where('tenant_id', $tenantId))
-            ->delete();
-    }
-
     /**
      * @param  Collection<int, Visit>  $visits
      * @return array<string, int>
      */
-    protected function counts($visits, string $column): array
+    protected function counts(Collection $visits, string $column): array
     {
         return $visits
             ->filter(fn (Visit $visit) => filled($visit->{$column}))
