@@ -12,6 +12,11 @@ use Illuminate\Database\Eloquent\Scope;
  * registration, so toggling the config takes effect immediately without
  * re-registering scopes.
  *
+ * Illuminate\Database\Eloquent\Scope only became generic in Laravel 13;
+ * on Laravel 12 this @implements tag itself is a PHPStan error ("interface
+ * is not generic"). Both directions are baselined in phpstan-baseline.neon
+ * since the package supports both majors and can't satisfy both at once.
+ *
  * @implements Scope<Model>
  */
 class TenantScope implements Scope

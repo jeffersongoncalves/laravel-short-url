@@ -1,0 +1,20 @@
+parameters:
+    # Illuminate\Database\Eloquent\Scope only became generic in Laravel 13.
+    # TentantScope's @implements Scope<Model> tag is correct on Laravel 13
+    # but is itself a PHPStan error on Laravel 12 ("interface is not
+    # generic"), while removing the tag flips to the opposite error on
+    # Laravel 13 ("does not specify its types"). Since this package
+    # supports both majors, exactly one of the two entries below fires
+    # depending on which is installed — the other stays unmatched, hence
+    # reportUnmatchedIgnoredErrors is off for this file.
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        -
+            message: '#^PHPDoc tag @implements contains generic type Illuminate\\Database\\Eloquent\\Scope\<Illuminate\\Database\\Eloquent\\Model\> but interface Illuminate\\Database\\Eloquent\\Scope is not generic\.$#'
+            count: 1
+            path: src/Tenancy/TenantScope.php
+
+        -
+            message: '#^Class JeffersonGoncalves\\LaravelShortUrl\\Tenancy\\TenantScope implements generic interface Illuminate\\Database\\Eloquent\\Scope but does not specify its types\: TModel$#'
+            count: 1
+            path: src/Tenancy/TenantScope.php
