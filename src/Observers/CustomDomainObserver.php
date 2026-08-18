@@ -4,9 +4,15 @@ namespace JeffersonGoncalves\LaravelShortUrl\Observers;
 
 use Illuminate\Support\Facades\Cache;
 use JeffersonGoncalves\LaravelShortUrl\Models\CustomDomain;
+use JeffersonGoncalves\LaravelShortUrl\Tenancy\PlanLimits;
 
 class CustomDomainObserver
 {
+    public function creating(CustomDomain $domain): void
+    {
+        app(PlanLimits::class)->assertCanCreateDomain();
+    }
+
     public function saved(CustomDomain $domain): void
     {
         $this->flush($domain);

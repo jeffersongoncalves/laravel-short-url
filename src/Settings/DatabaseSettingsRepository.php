@@ -5,9 +5,12 @@ namespace JeffersonGoncalves\LaravelShortUrl\Settings;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\SettingsRepository;
+use JeffersonGoncalves\LaravelShortUrl\Tenancy\TenantContext;
 
 class DatabaseSettingsRepository implements SettingsRepository
 {
+    public function __construct(protected TenantContext $tenants) {}
+
     public function get(string $key, mixed $default = null): mixed
     {
         if (! config('short-url.cache.enabled', true)) {
@@ -25,16 +28,19 @@ class DatabaseSettingsRepository implements SettingsRepository
     {
         $table = $this->table();
         $encoded = json_encode($value);
+        $storageKey = $this->scopedKey($key);
+        $tenantId = $this->tenants->currentId();
 
-        if (DB::table($table)->where('key', $key)->exists()) {
-            DB::table($table)->where('key', $key)->update([
+        if (DB::table($table)->where('key', $storageKey)->exists()) {
+            DB::table($table)->where('key', $storageKey)->update([
                 'value' => $encoded,
                 'updated_at' => now(),
             ]);
         } else {
             DB::table($table)->insert([
-                'key' => $key,
+                'key' => $storageKey,
                 'value' => $encoded,
+                'tenant_id' => $tenantId,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -45,7 +51,7 @@ class DatabaseSettingsRepository implements SettingsRepository
 
     public function forget(string $key): void
     {
-        DB::table($this->table())->where('key', $key)->delete();
+        DB::table($this->table())->where('key', $this->scopedKey($key))->delete();
 
         Cache::forget($this->cacheKey($key));
     }
@@ -79,7 +85,7 @@ class DatabaseSettingsRepository implements SettingsRepository
 
     protected function read(string $key, mixed $default): mixed
     {
-        $row = DB::table($this->table())->where('key', $key)->first();
+        $row = DB::table($this->table())->where('key', $this->scopedKey($key))->first();
 
         return $row ? json_decode((string) $row->value, true) : $default;
     }
@@ -89,8 +95,20 @@ class DatabaseSettingsRepository implements SettingsRepository
         return config('short-url.table_prefix', 'short_url_').'settings';
     }
 
+    /**
+     * "key" is a plain global-unique column (no per-tenant DB constraint,
+     * to stay portable across Postgres/MySQL/SQLite) — tenant scoping is
+     * achieved by prefixing the tenant id directly into the stored key.
+     */
+    protected function scopedKey(string $key): string
+    {
+        $tenantId = $this->tenants->currentId();
+
+        return $tenantId === null ? $key : "{$tenantId}:{$key}";
+    }
+
     protected function cacheKey(string $key): string
     {
-        return config('short-url.cache.prefix', 'short_url').":settings:{$key}";
+        return config('short-url.cache.prefix', 'short_url').':settings:'.$this->scopedKey($key);
     }
 }

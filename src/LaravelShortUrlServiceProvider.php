@@ -54,6 +54,8 @@ use JeffersonGoncalves\LaravelShortUrl\Services\CounterBuffer;
 use JeffersonGoncalves\LaravelShortUrl\Settings\DatabaseSettingsRepository;
 use JeffersonGoncalves\LaravelShortUrl\Stats\EloquentStatsAggregator;
 use JeffersonGoncalves\LaravelShortUrl\Targeting\RuleBasedTargetingResolver;
+use JeffersonGoncalves\LaravelShortUrl\Tenancy\PlanLimits;
+use JeffersonGoncalves\LaravelShortUrl\Tenancy\TenantContext;
 use JeffersonGoncalves\LaravelShortUrl\Webhooks\EloquentWebhookDispatcher;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -83,6 +85,8 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
                 'create_short_url_folders_table',
                 'create_short_url_tags_table',
                 'create_short_url_utm_templates_table',
+                'create_short_url_bio_pages_table',
+                'create_short_url_bio_links_table',
             ])
             ->hasTranslations()
             ->hasViews()
@@ -101,6 +105,8 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        $this->app->singleton(TenantContext::class);
+        $this->app->singleton(PlanLimits::class);
         $this->app->singleton(SettingsRepository::class, DatabaseSettingsRepository::class);
         $this->app->singleton(ShortUrlManager::class);
         $this->app->singleton(CounterBuffer::class);

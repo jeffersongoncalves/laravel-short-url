@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use JeffersonGoncalves\LaravelShortUrl\Tenancy\BelongsToTenant;
 
 /**
  * @property int $id
@@ -80,7 +81,7 @@ use Illuminate\Support\Str;
  */
 class ShortUrl extends Model
 {
-    use HasFactory, SoftDeletes;
+    use BelongsToTenant, HasFactory, SoftDeletes;
 
     protected $guarded = ['id'];
 

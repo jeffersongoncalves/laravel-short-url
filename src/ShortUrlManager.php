@@ -4,6 +4,7 @@ namespace JeffersonGoncalves\LaravelShortUrl;
 
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl as ShortUrlModel;
 use JeffersonGoncalves\LaravelShortUrl\Services\KeyGenerator;
+use JeffersonGoncalves\LaravelShortUrl\Tenancy\PlanLimits;
 
 class ShortUrlManager
 {
@@ -11,6 +12,8 @@ class ShortUrlManager
 
     public function create(array $attributes): ShortUrlModel
     {
+        app(PlanLimits::class)->assertCanCreateLink();
+
         $attributes['url_key'] ??= $this->keyGenerator->generate($attributes['custom_domain_id'] ?? null);
 
         $attributes += [

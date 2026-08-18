@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Hash;
+use JeffersonGoncalves\LaravelShortUrl\Exceptions\PlanLimitExceeded;
 use JeffersonGoncalves\LaravelShortUrl\Http\Resources\ShortUrlResource;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 use JeffersonGoncalves\LaravelShortUrl\ShortUrlManager;
@@ -33,7 +34,11 @@ class LinkController
     {
         $data = $this->hashPassword($request->validate($this->rules()));
 
-        return (new ShortUrlResource($manager->create($data)))->response()->setStatusCode(201);
+        try {
+            return (new ShortUrlResource($manager->create($data)))->response()->setStatusCode(201);
+        } catch (PlanLimitExceeded $e) {
+            return response()->json(['error' => ['code' => 'plan_limit_exceeded', 'message' => $e->getMessage()]], 403);
+        }
     }
 
     public function bulkStore(Request $request, ShortUrlManager $manager): JsonResponse

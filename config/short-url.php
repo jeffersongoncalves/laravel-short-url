@@ -411,7 +411,57 @@ return [
         ],
     ],
 
-    // Additional keys for future phases (multi-tenancy, ...) will be added
-    // here in later phases.
+    /*
+    |--------------------------------------------------------------------------
+    | Multi-Tenancy
+    |--------------------------------------------------------------------------
+    |
+    | Off by default — the package works standalone (single tenant) with
+    | stancl/tenancy entirely absent. Turning this on:
+    | - scopes every tenant_id-bearing model (ShortUrl, CustomDomain,
+    |   ApiKey, Webhook, Folder, Tag, UtmTemplate, Pixel) and the settings
+    |   table to the current tenant, resolved via stancl/tenancy's tenant()
+    |   helper when installed, else current_tenant_id below.
+    | - enforces the plan limits below on link/domain creation.
+    |
+    | - current_tenant_id: manual override when not using stancl/tenancy
+    |   (e.g. host apps with their own tenancy, or tests).
+    | - plan_resolver: Closure(int|string $tenantId): string returning
+    |   which key of "plans" the tenant is on. Defaults to "default".
+    | - plans.*.{links_per_month,domains}: null means unlimited.
+    |
+    */
+    'tenancy' => [
+        'enabled' => env('SHORT_URL_TENANCY_ENABLED', false),
+        'current_tenant_id' => env('SHORT_URL_CURRENT_TENANT_ID'),
+        'plan_resolver' => null,
+        'plans' => [
+            'default' => [
+                'links_per_month' => null,
+                'clicks_per_month' => null,
+                'domains' => null,
+                'members' => null,
+                'retention_days' => null,
+            ],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Link-in-Bio
+    |--------------------------------------------------------------------------
+    |
+    | Off by default. Public pages render at /{prefix}/{handle} (default
+    | "bio"), deliberately never at the app root, so a handle can never
+    | collide with a short url key. Building/editing pages is the plugin's
+    | job — this package only stores the data model and renders/tracks.
+    |
+    */
+    'bio' => [
+        'enabled' => env('SHORT_URL_BIO_ENABLED', false),
+        'prefix' => env('SHORT_URL_BIO_PREFIX', 'bio'),
+    ],
+
+    // Additional keys for future phases will be added here.
 
 ];

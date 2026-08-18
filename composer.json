@@ -34,7 +34,8 @@
         "geoip2/geoip2": "Required to resolve visitor geolocation with the MaxMind GeoIP driver.",
         "predis/predis": "Required for Redis-buffered visit counters when the phpredis extension isn't available.",
         "endroid/qr-code": "Required to generate QR codes for short urls (SVG/PNG export).",
-        "setasign/fpdf": "Required in addition to endroid/qr-code for PDF QR code export."
+        "setasign/fpdf": "Required in addition to endroid/qr-code for PDF QR code export.",
+        "stancl/tenancy": "Required to resolve the current tenant automatically when short-url.tenancy.enabled is on."
     },
     "autoload": {
         "psr-4": {

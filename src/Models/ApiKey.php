@@ -5,6 +5,7 @@ namespace JeffersonGoncalves\LaravelShortUrl\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use JeffersonGoncalves\LaravelShortUrl\Tenancy\BelongsToTenant;
 
 /**
  * @property int $id
@@ -19,6 +20,8 @@ use Illuminate\Support\Str;
  */
 class ApiKey extends Model
 {
+    use BelongsToTenant;
+
     protected $guarded = ['id'];
 
     protected $hidden = ['key_hash'];

@@ -3,6 +3,7 @@
 namespace JeffersonGoncalves\LaravelShortUrl\Http\Controllers\Api;
 
 use Illuminate\Http\JsonResponse;
+use JeffersonGoncalves\LaravelShortUrl\Exceptions\PlanLimitExceeded;
 use JeffersonGoncalves\LaravelShortUrl\Jobs\VerifyDomainJob;
 use JeffersonGoncalves\LaravelShortUrl\Models\CustomDomain;
 
@@ -21,7 +22,11 @@ class DomainController
             'root_redirect_url' => ['nullable', 'url'],
         ]);
 
-        $domain = CustomDomain::query()->create($data);
+        try {
+            $domain = CustomDomain::query()->create($data);
+        } catch (PlanLimitExceeded $e) {
+            return response()->json(['error' => ['code' => 'plan_limit_exceeded', 'message' => $e->getMessage()]], 403);
+        }
 
         VerifyDomainJob::dispatch($domain->id);
 
