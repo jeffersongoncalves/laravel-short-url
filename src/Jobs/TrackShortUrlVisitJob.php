@@ -9,10 +9,12 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\GeoIpDriver;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\VisitRepository;
+use JeffersonGoncalves\LaravelShortUrl\Contracts\WebhookDispatcher;
 use JeffersonGoncalves\LaravelShortUrl\Data\GeoLocation;
 use JeffersonGoncalves\LaravelShortUrl\Events\ShortUrlVisited;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 use JeffersonGoncalves\LaravelShortUrl\Models\Visit;
+use JeffersonGoncalves\LaravelShortUrl\Registries\AnalyticsDriverRegistry;
 use JeffersonGoncalves\LaravelShortUrl\Services\CounterBuffer;
 use JeffersonGoncalves\LaravelShortUrl\Support\IpAnonymizer;
 use JeffersonGoncalves\LaravelShortUrl\Support\RefererClassifier;
@@ -127,7 +129,34 @@ class TrackShortUrlVisitJob implements ShouldQueue
         $shortUrl = ShortUrl::query()->find($payload['short_url_id']);
 
         if ($shortUrl) {
-            ShortUrlVisited::dispatch($shortUrl, new Visit($attributes));
+            $visit = new Visit($attributes);
+            ShortUrlVisited::dispatch($shortUrl, $visit);
+
+            if (! $isBot) {
+                app(WebhookDispatcher::class)->dispatch('link.visited', [
+                    'short_url_id' => $shortUrl->id,
+                    'url_key' => $shortUrl->url_key,
+                    'country_code' => $attributes['country_code'] ?? null,
+                    'device_type' => $attributes['device_type'] ?? null,
+                    'referer_type' => $attributes['referer_type'] ?? null,
+                ], $shortUrl);
+
+                $this->forwardToAnalyticsDrivers(array_merge($attributes, ['url_key' => $shortUrl->url_key]));
+            }
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $visit
+     */
+    protected function forwardToAnalyticsDrivers(array $visit): void
+    {
+        foreach (app(AnalyticsDriverRegistry::class)->enabledDrivers() as $driver) {
+            try {
+                $driver->record($visit);
+            } catch (Throwable $e) {
+                report($e);
+            }
         }
     }
 

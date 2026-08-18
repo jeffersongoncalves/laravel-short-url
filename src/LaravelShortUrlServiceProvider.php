@@ -4,10 +4,16 @@ namespace JeffersonGoncalves\LaravelShortUrl;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Gate;
+use JeffersonGoncalves\LaravelShortUrl\Analytics\Ga4AnalyticsDriver;
+use JeffersonGoncalves\LaravelShortUrl\Analytics\PlausibleAnalyticsDriver;
 use JeffersonGoncalves\LaravelShortUrl\Console\Commands\AggregateAndPruneCommand;
 use JeffersonGoncalves\LaravelShortUrl\Console\Commands\CheckSafeBrowsingCommand;
+use JeffersonGoncalves\LaravelShortUrl\Console\Commands\DetectAnomaliesCommand;
+use JeffersonGoncalves\LaravelShortUrl\Console\Commands\PruneWebhookDeliveriesCommand;
+use JeffersonGoncalves\LaravelShortUrl\Console\Commands\SendScheduledReportsCommand;
 use JeffersonGoncalves\LaravelShortUrl\Console\Commands\SyncCountersCommand;
 use JeffersonGoncalves\LaravelShortUrl\Console\Commands\VerifyDomainsCommand;
+use JeffersonGoncalves\LaravelShortUrl\Contracts\ConversionApiDispatcher;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\DnsVerifier;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\GeoIpDriver;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\SafeBrowsingChecker;
@@ -16,6 +22,9 @@ use JeffersonGoncalves\LaravelShortUrl\Contracts\StatsAggregator;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\TargetingResolver;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\VisitRepository;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\VpnDetectionDriver;
+use JeffersonGoncalves\LaravelShortUrl\Contracts\WebhookDispatcher;
+use JeffersonGoncalves\LaravelShortUrl\Conversions\MetaCapiDispatcher;
+use JeffersonGoncalves\LaravelShortUrl\Conversions\NullConversionApiDispatcher;
 use JeffersonGoncalves\LaravelShortUrl\Dns\NativeDnsVerifier;
 use JeffersonGoncalves\LaravelShortUrl\GeoIp\HeadersGeoIpDriver;
 use JeffersonGoncalves\LaravelShortUrl\GeoIp\IpApiGeoIpDriver;
@@ -26,6 +35,7 @@ use JeffersonGoncalves\LaravelShortUrl\Observers\AuditLogObserver;
 use JeffersonGoncalves\LaravelShortUrl\Observers\CustomDomainObserver;
 use JeffersonGoncalves\LaravelShortUrl\Observers\ShortUrlObserver;
 use JeffersonGoncalves\LaravelShortUrl\Policies\ShortUrlPolicy;
+use JeffersonGoncalves\LaravelShortUrl\Registries\AnalyticsDriverRegistry;
 use JeffersonGoncalves\LaravelShortUrl\Registries\FilterTypeRegistry;
 use JeffersonGoncalves\LaravelShortUrl\Repositories\EloquentVisitRepository;
 use JeffersonGoncalves\LaravelShortUrl\Security\GoogleSafeBrowsingChecker;
@@ -35,6 +45,7 @@ use JeffersonGoncalves\LaravelShortUrl\Services\CounterBuffer;
 use JeffersonGoncalves\LaravelShortUrl\Settings\DatabaseSettingsRepository;
 use JeffersonGoncalves\LaravelShortUrl\Stats\EloquentStatsAggregator;
 use JeffersonGoncalves\LaravelShortUrl\Targeting\RuleBasedTargetingResolver;
+use JeffersonGoncalves\LaravelShortUrl\Webhooks\EloquentWebhookDispatcher;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -54,15 +65,23 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
                 'create_short_url_daily_stats_table',
                 'create_short_url_custom_domains_table',
                 'create_short_url_audit_logs_table',
+                'create_short_url_api_keys_table',
+                'create_short_url_webhooks_table',
+                'create_short_url_webhook_deliveries_table',
+                'create_short_url_conversions_table',
+                'create_short_url_alerts_table',
             ])
             ->hasTranslations()
             ->hasViews()
-            ->hasRoute('web')
+            ->hasRoutes(['web', 'api'])
             ->hasCommands([
                 SyncCountersCommand::class,
                 AggregateAndPruneCommand::class,
                 VerifyDomainsCommand::class,
                 CheckSafeBrowsingCommand::class,
+                PruneWebhookDeliveriesCommand::class,
+                DetectAnomaliesCommand::class,
+                SendScheduledReportsCommand::class,
             ]);
     }
 
@@ -93,6 +112,14 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
             'proxycheck_io' => new ProxyCheckVpnDetectionDriver,
             default => new IpApiVpnDetectionDriver,
         });
+
+        $this->app->singleton(WebhookDispatcher::class, EloquentWebhookDispatcher::class);
+        $this->app->singleton(AnalyticsDriverRegistry::class);
+
+        $this->app->bind(ConversionApiDispatcher::class, fn () => match (config('short-url.conversions.driver', 'none')) {
+            'meta' => new MetaCapiDispatcher,
+            default => new NullConversionApiDispatcher,
+        });
     }
 
     public function packageBooted(): void
@@ -104,6 +131,10 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
         Gate::policy(ShortUrl::class, ShortUrlPolicy::class);
 
         $this->app->make(FilterTypeRegistry::class)->registerDefaults();
+
+        $analyticsDrivers = $this->app->make(AnalyticsDriverRegistry::class);
+        $analyticsDrivers->extend('ga4', fn () => new Ga4AnalyticsDriver);
+        $analyticsDrivers->extend('plausible', fn () => new PlausibleAnalyticsDriver);
 
         $this->app->booted(function (): void {
             $schedule = $this->app->make(Schedule::class);
@@ -121,6 +152,10 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
             if (config('short-url.security.safe_browsing.enabled', false)) {
                 $schedule->command(CheckSafeBrowsingCommand::class)->daily();
             }
+
+            $schedule->command(DetectAnomaliesCommand::class)->hourly();
+            $schedule->command(SendScheduledReportsCommand::class)->daily();
+            $schedule->command(PruneWebhookDeliveriesCommand::class)->weekly();
         });
     }
 }

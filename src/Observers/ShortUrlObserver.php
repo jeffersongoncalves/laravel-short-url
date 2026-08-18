@@ -4,12 +4,14 @@ namespace JeffersonGoncalves\LaravelShortUrl\Observers;
 
 use Illuminate\Support\Facades\Cache;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\SafeBrowsingChecker;
+use JeffersonGoncalves\LaravelShortUrl\Contracts\WebhookDispatcher;
 use JeffersonGoncalves\LaravelShortUrl\Exceptions\UnsafeDestinationException;
 use JeffersonGoncalves\LaravelShortUrl\Jobs\CheckSafeBrowsingJob;
 use JeffersonGoncalves\LaravelShortUrl\Models\CustomDomain;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 use JeffersonGoncalves\LaravelShortUrl\Pipeline\Stages\ResolveShortUrl;
 use JeffersonGoncalves\LaravelShortUrl\Security\DestinationUrlCollector;
+use Throwable;
 
 class ShortUrlObserver
 {
@@ -30,6 +32,8 @@ class ShortUrlObserver
             $result = $checker->check($url);
 
             if ($result->status === 'unsafe') {
+                $this->notify('link.unsafe_detected', $shortUrl, ['url' => $url, 'threats' => $result->threats]);
+
                 throw new UnsafeDestinationException($url, $result->threats);
             }
 
@@ -42,6 +46,16 @@ class ShortUrlObserver
         $shortUrl->safe_browsing_checked_at = now();
     }
 
+    public function created(ShortUrl $shortUrl): void
+    {
+        $this->notify('link.created', $shortUrl);
+    }
+
+    public function updated(ShortUrl $shortUrl): void
+    {
+        $this->notify('link.updated', $shortUrl, ['changes' => array_keys($shortUrl->getChanges())]);
+    }
+
     public function saved(ShortUrl $shortUrl): void
     {
         $this->flush($shortUrl);
@@ -51,6 +65,7 @@ class ShortUrlObserver
     public function deleted(ShortUrl $shortUrl): void
     {
         $this->flush($shortUrl);
+        $this->notify('link.deleted', $shortUrl);
     }
 
     protected function flush(ShortUrl $shortUrl): void
@@ -98,5 +113,21 @@ class ShortUrlObserver
         }
 
         CheckSafeBrowsingJob::dispatch($shortUrl->id);
+    }
+
+    /**
+     * @param  array<string, mixed>  $extra
+     */
+    protected function notify(string $event, ShortUrl $shortUrl, array $extra = []): void
+    {
+        try {
+            app(WebhookDispatcher::class)->dispatch(
+                $event,
+                array_merge(['short_url_id' => $shortUrl->id, 'url_key' => $shortUrl->url_key], $extra),
+                $shortUrl
+            );
+        } catch (Throwable $e) {
+            report($e);
+        }
     }
 }

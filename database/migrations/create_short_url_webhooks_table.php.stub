@@ -1,0 +1,37 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        $prefix = config('short-url.table_prefix', 'short_url_');
+
+        Schema::create($prefix.'webhooks', function (Blueprint $table): void {
+            $table->id();
+            $table->unsignedBigInteger('tenant_id')->nullable();
+            $table->unsignedBigInteger('short_url_id')->nullable(); // null = fires for every link (subject to `events`)
+
+            $table->string('url');
+            $table->string('secret');
+            $table->json('events'); // e.g. ["link.visited"] or ["*"] for every event
+
+            $table->boolean('is_active')->default(true);
+            $table->unsignedInteger('failure_count')->default(0);
+            $table->timestamp('disabled_at')->nullable();
+
+            $table->timestamps();
+
+            $table->index(['short_url_id']);
+            $table->index(['is_active', 'disabled_at']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists(config('short-url.table_prefix', 'short_url_').'webhooks');
+    }
+};

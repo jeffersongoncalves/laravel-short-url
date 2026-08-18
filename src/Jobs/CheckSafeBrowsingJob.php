@@ -8,6 +8,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\SafeBrowsingChecker;
+use JeffersonGoncalves\LaravelShortUrl\Contracts\WebhookDispatcher;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 use JeffersonGoncalves\LaravelShortUrl\Security\DestinationUrlCollector;
 use Throwable;
@@ -28,12 +29,16 @@ class CheckSafeBrowsingJob implements ShouldQueue
             }
 
             $status = 'safe';
+            $unsafeUrl = null;
+            $threats = [];
 
             foreach (DestinationUrlCollector::collect($shortUrl) as $url) {
                 $result = $checker->check($url);
 
                 if ($result->status === 'unsafe') {
                     $status = 'unsafe';
+                    $unsafeUrl = $url;
+                    $threats = $result->threats;
                     break;
                 }
 
@@ -46,6 +51,15 @@ class CheckSafeBrowsingJob implements ShouldQueue
                 'safe_browsing_status' => $status,
                 'safe_browsing_checked_at' => now(),
             ])->saveQuietly();
+
+            if ($status === 'unsafe') {
+                app(WebhookDispatcher::class)->dispatch('link.unsafe_detected', [
+                    'short_url_id' => $shortUrl->id,
+                    'url_key' => $shortUrl->url_key,
+                    'url' => $unsafeUrl,
+                    'threats' => $threats,
+                ], $shortUrl);
+            }
         } catch (Throwable $e) {
             report($e);
         }

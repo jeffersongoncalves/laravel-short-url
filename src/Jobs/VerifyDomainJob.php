@@ -8,6 +8,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\DnsVerifier;
+use JeffersonGoncalves\LaravelShortUrl\Contracts\WebhookDispatcher;
 use JeffersonGoncalves\LaravelShortUrl\Models\CustomDomain;
 use Throwable;
 
@@ -38,6 +39,8 @@ class VerifyDomainJob implements ShouldQueue
                     'last_checked_at' => now(),
                 ])->save();
 
+                app(WebhookDispatcher::class)->dispatch('domain.verified', ['domain' => $domain->domain], null);
+
                 return;
             }
 
@@ -48,6 +51,12 @@ class VerifyDomainJob implements ShouldQueue
                 'last_checked_at' => now(),
                 'disabled_at' => $failureCount >= $maxFailures ? now() : $domain->disabled_at,
             ])->save();
+
+            app(WebhookDispatcher::class)->dispatch('domain.failed', [
+                'domain' => $domain->domain,
+                'error' => $result->error,
+                'failure_count' => $failureCount,
+            ], null);
         } catch (Throwable $e) {
             report($e);
         }

@@ -226,7 +226,118 @@ return [
         'enabled' => env('SHORT_URL_AUDIT_ENABLED', true),
     ],
 
-    // Additional keys for future phases (QR, multi-tenancy, API,
-    // webhooks, ...) will be added here in later phases.
+    /*
+    |--------------------------------------------------------------------------
+    | REST API
+    |--------------------------------------------------------------------------
+    |
+    | Off by default — the API surfaces every link's destination and stats
+    | over HTTP, so it's an explicit opt-in. Authenticated via a Bearer
+    | short_url_api_keys token (see ApiKeyAuth), not the host app's own
+    | auth guard.
+    |
+    */
+    'api' => [
+        'enabled' => env('SHORT_URL_API_ENABLED', false),
+        'prefix' => env('SHORT_URL_API_PREFIX', 'api/short-url/v1'),
+
+        'rate_limit' => [
+            'max_attempts' => env('SHORT_URL_API_RATE_LIMIT_MAX_ATTEMPTS', 300),
+            'decay_seconds' => env('SHORT_URL_API_RATE_LIMIT_DECAY_SECONDS', 60),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Webhooks
+    |--------------------------------------------------------------------------
+    |
+    | - retry_seconds: delay before each retry attempt, in order.
+    | - max_failures: consecutive failures (across all attempts of all
+    |   deliveries) before a webhook is auto-disabled.
+    |
+    */
+    'webhooks' => [
+        'retry_seconds' => [10, 60, 300],
+        'max_failures' => env('SHORT_URL_WEBHOOK_MAX_FAILURES', 20),
+        'delivery_retention_days' => env('SHORT_URL_WEBHOOK_DELIVERY_RETENTION_DAYS', 30),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Analytics Drivers
+    |--------------------------------------------------------------------------
+    |
+    | Server-side analytics forwarding on every tracked visit, in addition
+    | to this package's own stats. Each entry is enabled independently.
+    |
+    */
+    'analytics' => [
+        'ga4' => [
+            'enabled' => env('SHORT_URL_ANALYTICS_GA4_ENABLED', false),
+            'measurement_id' => env('SHORT_URL_GA4_MEASUREMENT_ID'),
+            'api_secret' => env('SHORT_URL_GA4_API_SECRET'),
+        ],
+        'plausible' => [
+            'enabled' => env('SHORT_URL_ANALYTICS_PLAUSIBLE_ENABLED', false),
+            'api_host' => env('SHORT_URL_PLAUSIBLE_API_HOST', 'https://plausible.io'),
+            'domain' => env('SHORT_URL_PLAUSIBLE_DOMAIN'),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Conversions
+    |--------------------------------------------------------------------------
+    |
+    | Server-to-server forwarding of conversions recorded via POST
+    | /conversions. "driver" selects which API a conversion is also sent
+    | to; "none" just records it locally.
+    |
+    */
+    'conversions' => [
+        'driver' => env('SHORT_URL_CONVERSIONS_DRIVER', 'none'),
+
+        'meta' => [
+            'pixel_id' => env('SHORT_URL_META_PIXEL_ID'),
+            'access_token' => env('SHORT_URL_META_ACCESS_TOKEN'),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Alerts
+    |--------------------------------------------------------------------------
+    */
+    'alerts' => [
+        'anomaly_z_threshold' => env('SHORT_URL_ALERT_Z_THRESHOLD', 3.0),
+        'baseline_days' => env('SHORT_URL_ALERT_BASELINE_DAYS', 7),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Notifications
+    |--------------------------------------------------------------------------
+    |
+    | Operator-level recipients for alerts and scheduled reports — this
+    | package has no user model of its own, so these are plain config
+    | values rather than per-user preferences. Each channel activates the
+    | moment its config is present; leave it null/empty to skip it.
+    |
+    */
+    'notifications' => [
+        'mail_to' => array_filter(explode(',', (string) env('SHORT_URL_NOTIFY_MAIL_TO', ''))),
+        'database_enabled' => env('SHORT_URL_NOTIFY_DATABASE_ENABLED', false),
+        'broadcast_enabled' => env('SHORT_URL_NOTIFY_BROADCAST_ENABLED', false),
+        'slack_webhook_url' => env('SHORT_URL_NOTIFY_SLACK_WEBHOOK_URL'),
+        'discord_webhook_url' => env('SHORT_URL_NOTIFY_DISCORD_WEBHOOK_URL'),
+        'teams_webhook_url' => env('SHORT_URL_NOTIFY_TEAMS_WEBHOOK_URL'),
+        'telegram_bot_token' => env('SHORT_URL_NOTIFY_TELEGRAM_BOT_TOKEN'),
+        'telegram_chat_id' => env('SHORT_URL_NOTIFY_TELEGRAM_CHAT_ID'),
+        'scheduled_reports_enabled' => env('SHORT_URL_SCHEDULED_REPORTS_ENABLED', false),
+    ],
+
+    // Additional keys for future phases (QR, multi-tenancy, ...) will be
+    // added here in later phases.
 
 ];
