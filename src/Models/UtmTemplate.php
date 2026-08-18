@@ -4,6 +4,7 @@ namespace JeffersonGoncalves\LaravelShortUrl\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use JeffersonGoncalves\LaravelShortUrl\Database\Factories\UtmTemplateFactory;
 use JeffersonGoncalves\LaravelShortUrl\Tenancy\BelongsToTenant;
 
 /**
@@ -18,6 +19,7 @@ use JeffersonGoncalves\LaravelShortUrl\Tenancy\BelongsToTenant;
  */
 class UtmTemplate extends Model
 {
+    /** @use HasFactory<UtmTemplateFactory> */
     use BelongsToTenant, HasFactory;
 
     protected $guarded = ['id'];

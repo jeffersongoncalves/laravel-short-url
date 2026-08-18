@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use JeffersonGoncalves\LaravelShortUrl\Database\Factories\WebhookFactory;
 use JeffersonGoncalves\LaravelShortUrl\Tenancy\BelongsToTenant;
 
 /**
@@ -21,6 +22,7 @@ use JeffersonGoncalves\LaravelShortUrl\Tenancy\BelongsToTenant;
  */
 class Webhook extends Model
 {
+    /** @use HasFactory<WebhookFactory> */
     use BelongsToTenant, HasFactory;
 
     protected $guarded = ['id'];

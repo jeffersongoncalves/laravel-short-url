@@ -10,6 +10,9 @@ class ShortUrlManager
 {
     public function __construct(protected KeyGenerator $keyGenerator) {}
 
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
     public function create(array $attributes): ShortUrlModel
     {
         app(PlanLimits::class)->assertCanCreateLink();

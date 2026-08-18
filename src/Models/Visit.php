@@ -78,6 +78,9 @@ class Visit extends Model
         return config('short-url.table_prefix', 'short_url_').'visits';
     }
 
+    /**
+     * @return BelongsTo<ShortUrl, $this>
+     */
     public function shortUrl(): BelongsTo
     {
         return $this->belongsTo(ShortUrl::class);

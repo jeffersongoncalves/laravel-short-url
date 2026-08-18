@@ -60,7 +60,10 @@ class ApiKey extends Model
         return ['key' => $key, 'token' => $token];
     }
 
-    public function can($ability, $arguments = []): bool
+    /**
+     * @param  array<int, mixed>  $arguments
+     */
+    public function can(mixed $ability, array $arguments = []): bool
     {
         return in_array('*', $this->abilities, true) || in_array($ability, $this->abilities, true);
     }

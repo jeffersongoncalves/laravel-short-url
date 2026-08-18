@@ -5,6 +5,7 @@ namespace JeffersonGoncalves\LaravelShortUrl\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use JeffersonGoncalves\LaravelShortUrl\Database\Factories\BioLinkFactory;
 
 /**
  * @property int $id
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class BioLink extends Model
 {
+    /** @use HasFactory<BioLinkFactory> */
     use HasFactory;
 
     protected $guarded = ['id'];

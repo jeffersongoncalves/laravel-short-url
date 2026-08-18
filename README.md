@@ -131,7 +131,7 @@ composer analyse      # PHPStan (Larastan) level 5+
 composer format        # Pint
 ```
 
-CI runs the suite against PHP 8.3/8.4 × Laravel 11/12 × PostgreSQL/MySQL/SQLite. An architecture test (`Tests\Architecture\NoFilamentTest`) guarantees no file imports `Filament\`.
+CI runs the suite against PHP 8.3/8.4 × Laravel 12/13 × PostgreSQL/MySQL/SQLite. An architecture test (`Tests\Architecture\NoFilamentTest`) guarantees no file imports `Filament\`.
 
 ## Security
 

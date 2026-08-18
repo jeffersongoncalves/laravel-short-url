@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use JeffersonGoncalves\LaravelShortUrl\Database\Factories\FolderFactory;
 use JeffersonGoncalves\LaravelShortUrl\Tenancy\BelongsToTenant;
 
 /**
@@ -17,6 +18,7 @@ use JeffersonGoncalves\LaravelShortUrl\Tenancy\BelongsToTenant;
  */
 class Folder extends Model
 {
+    /** @use HasFactory<FolderFactory> */
     use BelongsToTenant, HasFactory;
 
     protected $guarded = ['id'];
@@ -26,16 +28,25 @@ class Folder extends Model
         return config('short-url.table_prefix', 'short_url_').'folders';
     }
 
+    /**
+     * @return BelongsTo<self, $this>
+     */
     public function parent(): BelongsTo
     {
         return $this->belongsTo(self::class, 'parent_id');
     }
 
+    /**
+     * @return HasMany<self, $this>
+     */
     public function children(): HasMany
     {
         return $this->hasMany(self::class, 'parent_id');
     }
 
+    /**
+     * @return HasMany<ShortUrl, $this>
+     */
     public function shortUrls(): HasMany
     {
         return $this->hasMany(ShortUrl::class, 'folder_id');

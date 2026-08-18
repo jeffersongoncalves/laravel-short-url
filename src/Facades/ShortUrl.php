@@ -8,7 +8,7 @@ use JeffersonGoncalves\LaravelShortUrl\ShortUrlBuilder;
 use JeffersonGoncalves\LaravelShortUrl\ShortUrlManager;
 
 /**
- * @method static ShortUrlModel create(array $attributes)
+ * @method static ShortUrlModel create(array<string, mixed> $attributes)
  * @method static ShortUrlBuilder destination(string $url)
  * @method static ShortUrlModel|null resolve(string $key, ?string $host = null)
  *

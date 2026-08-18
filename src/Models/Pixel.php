@@ -5,6 +5,7 @@ namespace JeffersonGoncalves\LaravelShortUrl\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use JeffersonGoncalves\LaravelShortUrl\Database\Factories\PixelFactory;
 use JeffersonGoncalves\LaravelShortUrl\Tenancy\BelongsToTenant;
 
 /**
@@ -16,6 +17,7 @@ use JeffersonGoncalves\LaravelShortUrl\Tenancy\BelongsToTenant;
  */
 class Pixel extends Model
 {
+    /** @use HasFactory<PixelFactory> */
     use BelongsToTenant, HasFactory;
 
     protected $guarded = ['id'];
@@ -32,6 +34,9 @@ class Pixel extends Model
         return config('short-url.table_prefix', 'short_url_').'pixels';
     }
 
+    /**
+     * @return BelongsToMany<ShortUrl, $this>
+     */
     public function shortUrls(): BelongsToMany
     {
         return $this->belongsToMany(

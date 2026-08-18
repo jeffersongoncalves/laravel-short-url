@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Scope;
  * resolves (see TenantContext) — checked at query time, not at scope
  * registration, so toggling the config takes effect immediately without
  * re-registering scopes.
+ *
+ * @implements Scope<Model>
  */
 class TenantScope implements Scope
 {

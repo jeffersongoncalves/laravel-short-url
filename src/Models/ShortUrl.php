@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use JeffersonGoncalves\LaravelShortUrl\Database\Factories\ShortUrlFactory;
 use JeffersonGoncalves\LaravelShortUrl\Tenancy\BelongsToTenant;
 
 /**
@@ -81,6 +82,7 @@ use JeffersonGoncalves\LaravelShortUrl\Tenancy\BelongsToTenant;
  */
 class ShortUrl extends Model
 {
+    /** @use HasFactory<ShortUrlFactory> */
     use BelongsToTenant, HasFactory, SoftDeletes;
 
     protected $guarded = ['id'];
@@ -164,6 +166,9 @@ class ShortUrl extends Model
         $query->where('is_enabled', true);
     }
 
+    /**
+     * @return BelongsTo<CustomDomain, $this>
+     */
     public function customDomain(): BelongsTo
     {
         return $this->belongsTo(CustomDomain::class, 'custom_domain_id');
@@ -180,6 +185,9 @@ class ShortUrl extends Model
         );
     }
 
+    /**
+     * @return BelongsTo<Folder, $this>
+     */
     public function folder(): BelongsTo
     {
         return $this->belongsTo(Folder::class, 'folder_id');

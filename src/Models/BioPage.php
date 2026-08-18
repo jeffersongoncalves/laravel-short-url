@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use JeffersonGoncalves\LaravelShortUrl\Database\Factories\BioPageFactory;
 use JeffersonGoncalves\LaravelShortUrl\Tenancy\BelongsToTenant;
 
 /**
@@ -25,6 +26,7 @@ use JeffersonGoncalves\LaravelShortUrl\Tenancy\BelongsToTenant;
  */
 class BioPage extends Model
 {
+    /** @use HasFactory<BioPageFactory> */
     use BelongsToTenant, HasFactory, SoftDeletes;
 
     protected $guarded = ['id'];

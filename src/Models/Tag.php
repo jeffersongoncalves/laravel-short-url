@@ -5,6 +5,7 @@ namespace JeffersonGoncalves\LaravelShortUrl\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use JeffersonGoncalves\LaravelShortUrl\Database\Factories\TagFactory;
 use JeffersonGoncalves\LaravelShortUrl\Tenancy\BelongsToTenant;
 
 /**
@@ -15,6 +16,7 @@ use JeffersonGoncalves\LaravelShortUrl\Tenancy\BelongsToTenant;
  */
 class Tag extends Model
 {
+    /** @use HasFactory<TagFactory> */
     use BelongsToTenant, HasFactory;
 
     protected $guarded = ['id'];
