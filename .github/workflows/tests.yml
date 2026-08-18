@@ -19,16 +19,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Single PHP/Laravel combo (latest supported of each) — composer.json
-        # already constrains the real support range (^8.3, ^12.0|^13.0), CI
-        # only needs to catch driver-specific SQL differences per database,
-        # not repeat that check across every PHP × Laravel permutation.
-        php: [8.4]
-        laravel: [13.*]
-        testbench: [11.*]
+        # composer.json/composer.lock already pin the supported PHP/Laravel
+        # combo (PHP 8.4, Laravel 13) — this only needs to vary by database
+        # to catch driver-specific SQL differences. Pint and PHPStan run in
+        # their own dedicated workflows, not repeated here per database.
         database: [sqlite, mysql, pgsql]
 
-    name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} - ${{ matrix.database }}
+    name: Tests - ${{ matrix.database }}
 
     services:
       mysql:
@@ -65,20 +62,12 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
-          php-version: ${{ matrix.php }}
+          php-version: '8.4'
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, pdo_mysql, pdo_pgsql
           coverage: none
 
-      - name: Install dependencies
-        run: |
-          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
-          composer update --prefer-stable --prefer-dist --no-interaction
-
-      - name: Run Pint
-        run: vendor/bin/pint --test
-
-      - name: Run PHPStan
-        run: vendor/bin/phpstan analyse
+      - name: Install composer dependencies
+        uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # v3
 
       - name: Run Tests (sqlite)
         if: matrix.database == 'sqlite'
