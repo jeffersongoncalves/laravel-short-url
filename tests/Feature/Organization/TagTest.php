@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 use JeffersonGoncalves\LaravelShortUrl\Models\Tag;
 
@@ -20,6 +21,10 @@ it('enforces a unique tag name per tenant', function () {
     // real tenant id, otherwise the constraint never actually engages.
     Tag::factory()->create(['name' => 'launch', 'tenant_id' => 1]);
 
-    expect(fn () => Tag::factory()->create(['name' => 'launch', 'tenant_id' => 1]))
+    // DB::transaction() wraps the failing insert in its own SAVEPOINT —
+    // on Postgres, a caught constraint violation still aborts the whole
+    // enclosing transaction (including RefreshDatabase's per-test one)
+    // until something rolls back to a savepoint.
+    expect(fn () => DB::transaction(fn () => Tag::factory()->create(['name' => 'launch', 'tenant_id' => 1])))
         ->toThrow(QueryException::class);
 });

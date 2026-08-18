@@ -2,6 +2,7 @@
 
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 
 it('casts attributes to the expected types', function () {
@@ -49,7 +50,11 @@ it('enforces url_key uniqueness for two root-level (no custom domain) links', fu
     // common case. It's now a NOT NULL column defaulting to sentinel 0.
     ShortUrl::factory()->create(['url_key' => 'dupe1234']);
 
-    expect(fn () => ShortUrl::factory()->create(['url_key' => 'dupe1234']))
+    // DB::transaction() wraps the failing insert in its own SAVEPOINT —
+    // on Postgres, a caught constraint violation still aborts the whole
+    // enclosing transaction (including RefreshDatabase's per-test one)
+    // until something rolls back to a savepoint.
+    expect(fn () => DB::transaction(fn () => ShortUrl::factory()->create(['url_key' => 'dupe1234'])))
         ->toThrow(QueryException::class);
 });
 

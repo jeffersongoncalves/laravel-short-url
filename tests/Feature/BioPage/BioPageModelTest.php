@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use JeffersonGoncalves\LaravelShortUrl\Models\BioLink;
 use JeffersonGoncalves\LaravelShortUrl\Models\BioPage;
 
@@ -32,6 +33,10 @@ it('increments click_count via recordClick', function () {
 it('enforces a unique handle', function () {
     BioPage::factory()->create(['handle' => 'jeff']);
 
-    expect(fn () => BioPage::factory()->create(['handle' => 'jeff']))
+    // DB::transaction() wraps the failing insert in its own SAVEPOINT —
+    // on Postgres, a caught constraint violation still aborts the whole
+    // enclosing transaction (including RefreshDatabase's per-test one)
+    // until something rolls back to a savepoint.
+    expect(fn () => DB::transaction(fn () => BioPage::factory()->create(['handle' => 'jeff'])))
         ->toThrow(QueryException::class);
 });
