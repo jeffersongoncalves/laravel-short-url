@@ -337,7 +337,60 @@ return [
         'scheduled_reports_enabled' => env('SHORT_URL_SCHEDULED_REPORTS_ENABLED', false),
     ],
 
-    // Additional keys for future phases (QR, multi-tenancy, ...) will be
-    // added here in later phases.
+    /*
+    |--------------------------------------------------------------------------
+    | QR Codes
+    |--------------------------------------------------------------------------
+    |
+    | Requires the optional endroid/qr-code package (see composer.json
+    | "suggest"). driver is currently fixed to "endroid" — the config key
+    | exists for a future alternate driver.
+    |
+    */
+    'qr' => [
+        'driver' => env('SHORT_URL_QR_DRIVER', 'endroid'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Deep Links (mobile app opening)
+    |--------------------------------------------------------------------------
+    |
+    | - aasa/assetlinks: serve the well-known files iOS/Android need to
+    |   trust this domain for Universal/App Links. Off by default and
+    |   require operator-supplied app identifiers — the package has no way
+    |   to know the host app's Apple Team ID or Android signing fingerprint.
+    |
+    */
+    'deep_links' => [
+        'aasa' => [
+            'enabled' => env('SHORT_URL_AASA_ENABLED', false),
+            // e.g. ['TEAMID.com.example.app']
+            'app_ids' => array_filter(explode(',', (string) env('SHORT_URL_AASA_APP_IDS', ''))),
+            'paths' => ['*'],
+        ],
+        'assetlinks' => [
+            'enabled' => env('SHORT_URL_ASSETLINKS_ENABLED', false),
+            // Populate via config/short-url.php override: [['package' => 'com.example.app', 'fingerprints' => ['AA:BB:...']]]
+            'apps' => [],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pixels
+    |--------------------------------------------------------------------------
+    |
+    | - require_consent: when true, the interstitial shows an accept/
+    |   decline banner before firing any attached pixel script instead of
+    |   firing them automatically.
+    |
+    */
+    'pixels' => [
+        'require_consent' => env('SHORT_URL_PIXELS_REQUIRE_CONSENT', false),
+    ],
+
+    // Additional keys for future phases (multi-tenancy, ...) will be added
+    // here in later phases.
 
 ];

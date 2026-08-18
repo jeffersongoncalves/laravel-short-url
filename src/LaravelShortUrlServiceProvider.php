@@ -16,6 +16,7 @@ use JeffersonGoncalves\LaravelShortUrl\Console\Commands\VerifyDomainsCommand;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\ConversionApiDispatcher;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\DnsVerifier;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\GeoIpDriver;
+use JeffersonGoncalves\LaravelShortUrl\Contracts\QrCodeBuilder;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\SafeBrowsingChecker;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\SettingsRepository;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\StatsAggregator;
@@ -35,8 +36,11 @@ use JeffersonGoncalves\LaravelShortUrl\Observers\AuditLogObserver;
 use JeffersonGoncalves\LaravelShortUrl\Observers\CustomDomainObserver;
 use JeffersonGoncalves\LaravelShortUrl\Observers\ShortUrlObserver;
 use JeffersonGoncalves\LaravelShortUrl\Policies\ShortUrlPolicy;
+use JeffersonGoncalves\LaravelShortUrl\Qr\EndroidQrCodeBuilder;
 use JeffersonGoncalves\LaravelShortUrl\Registries\AnalyticsDriverRegistry;
+use JeffersonGoncalves\LaravelShortUrl\Registries\DeepLinkRegistry;
 use JeffersonGoncalves\LaravelShortUrl\Registries\FilterTypeRegistry;
+use JeffersonGoncalves\LaravelShortUrl\Registries\PixelProviderRegistry;
 use JeffersonGoncalves\LaravelShortUrl\Repositories\EloquentVisitRepository;
 use JeffersonGoncalves\LaravelShortUrl\Security\GoogleSafeBrowsingChecker;
 use JeffersonGoncalves\LaravelShortUrl\Security\IpApiVpnDetectionDriver;
@@ -70,6 +74,7 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
                 'create_short_url_webhook_deliveries_table',
                 'create_short_url_conversions_table',
                 'create_short_url_alerts_table',
+                'create_short_url_pixels_table',
             ])
             ->hasTranslations()
             ->hasViews()
@@ -91,7 +96,10 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
         $this->app->singleton(ShortUrlManager::class);
         $this->app->singleton(CounterBuffer::class);
         $this->app->singleton(FilterTypeRegistry::class);
+        $this->app->singleton(DeepLinkRegistry::class);
+        $this->app->singleton(PixelProviderRegistry::class);
         $this->app->singleton(DnsVerifier::class, NativeDnsVerifier::class);
+        $this->app->bind(QrCodeBuilder::class, EndroidQrCodeBuilder::class);
 
         $this->app->singleton(VisitRepository::class, fn () => match (config('short-url.tracking.driver', 'eloquent')) {
             default => new EloquentVisitRepository,
@@ -131,6 +139,8 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
         Gate::policy(ShortUrl::class, ShortUrlPolicy::class);
 
         $this->app->make(FilterTypeRegistry::class)->registerDefaults();
+        $this->app->make(DeepLinkRegistry::class)->registerDefaults();
+        $this->app->make(PixelProviderRegistry::class)->registerDefaults();
 
         $analyticsDrivers = $this->app->make(AnalyticsDriverRegistry::class);
         $analyticsDrivers->extend('ga4', fn () => new Ga4AnalyticsDriver);

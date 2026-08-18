@@ -11,4 +11,7 @@ return [
     'expired_title' => 'This link has expired',
     'expired_description' => 'This link is no longer active. Contact :site if you think this is a mistake.',
     'vpn_blocked' => 'Access via VPN or proxy is not allowed for this link.',
+    'redirecting' => 'Redirecting…',
+    'consent_accept' => 'Accept',
+    'consent_decline' => 'Decline',
 ];

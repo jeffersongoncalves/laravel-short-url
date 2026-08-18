@@ -22,15 +22,19 @@
         "spatie/laravel-package-tools": "^1.16"
     },
     "require-dev": {
+        "endroid/qr-code": "^6.0",
         "larastan/larastan": "^3.0",
         "laravel/pint": "^1.0",
         "orchestra/testbench": "^10.0|^11.0",
         "pestphp/pest": "^4.0",
-        "pestphp/pest-plugin-laravel": "^4.0"
+        "pestphp/pest-plugin-laravel": "^4.0",
+        "setasign/fpdf": "^1.9"
     },
     "suggest": {
         "geoip2/geoip2": "Required to resolve visitor geolocation with the MaxMind GeoIP driver.",
-        "predis/predis": "Required for Redis-buffered visit counters when the phpredis extension isn't available."
+        "predis/predis": "Required for Redis-buffered visit counters when the phpredis extension isn't available.",
+        "endroid/qr-code": "Required to generate QR codes for short urls (SVG/PNG export).",
+        "setasign/fpdf": "Required in addition to endroid/qr-code for PDF QR code export."
     },
     "autoload": {
         "psr-4": {

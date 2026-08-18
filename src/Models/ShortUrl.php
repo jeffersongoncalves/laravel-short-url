@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -166,5 +167,16 @@ class ShortUrl extends Model
     public function customDomain(): BelongsTo
     {
         return $this->belongsTo(CustomDomain::class, 'custom_domain_id');
+    }
+
+    /**
+     * @return BelongsToMany<Pixel, $this>
+     */
+    public function pixels(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Pixel::class,
+            config('short-url.table_prefix', 'short_url_').'pixel_short_url'
+        );
     }
 }

@@ -28,3 +28,19 @@ it('does not flag a regular browser and reads device/os', function () {
         ->and($result->tracking['device_type'])->toBe('mobile')
         ->and($result->tracking['operating_system'])->toBe('Android');
 });
+
+it('flags a qr scan from the source query param', function () {
+    $context = new RedirectContext(Request::create('/?source=qr'), 'abc1234');
+
+    $result = (new DetectBot)($context, fn (RedirectContext $c) => $c);
+
+    expect($result->tracking['is_qr_scan'])->toBeTrue();
+});
+
+it('does not flag a regular visit as a qr scan', function () {
+    $context = new RedirectContext(Request::create('/'), 'abc1234');
+
+    $result = (new DetectBot)($context, fn (RedirectContext $c) => $c);
+
+    expect($result->tracking['is_qr_scan'])->toBeFalse();
+});
