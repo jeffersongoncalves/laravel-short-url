@@ -34,6 +34,11 @@ class Pixel extends Model
         return config('short-url.table_prefix', 'short_url_').'pixels';
     }
 
+    protected static function newFactory(): PixelFactory
+    {
+        return PixelFactory::new();
+    }
+
     /**
      * @return BelongsToMany<ShortUrl, $this>
      */

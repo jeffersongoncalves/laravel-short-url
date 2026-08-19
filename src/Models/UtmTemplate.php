@@ -29,6 +29,11 @@ class UtmTemplate extends Model
         return config('short-url.table_prefix', 'short_url_').'utm_templates';
     }
 
+    protected static function newFactory(): UtmTemplateFactory
+    {
+        return UtmTemplateFactory::new();
+    }
+
     /**
      * @return array<string, string|null>
      */

@@ -2,7 +2,6 @@
 
 namespace JeffersonGoncalves\LaravelShortUrl\Tests;
 
-use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use JeffersonGoncalves\LaravelShortUrl\LaravelShortUrlServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
@@ -10,15 +9,6 @@ use Orchestra\Testbench\TestCase as Orchestra;
 abstract class TestCase extends Orchestra
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'JeffersonGoncalves\\LaravelShortUrl\\Database\\Factories\\'.class_basename($modelName).'Factory'
-        );
-    }
 
     protected function getPackageProviders($app): array
     {

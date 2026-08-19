@@ -28,6 +28,11 @@ class Folder extends Model
         return config('short-url.table_prefix', 'short_url_').'folders';
     }
 
+    protected static function newFactory(): FolderFactory
+    {
+        return FolderFactory::new();
+    }
+
     /**
      * @return BelongsTo<self, $this>
      */

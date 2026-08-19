@@ -138,6 +138,21 @@ class ShortUrl extends Model
         return config('short-url.table_prefix', 'short_url_').'urls';
     }
 
+    /**
+     * Laravel's default factory-name guesser assumes the App\Models
+     * convention, which never matches a package namespace — without this,
+     * ShortUrl::factory() throws "class not found" for any consumer of this
+     * package (only the package's own test suite worked, since TestCase
+     * registered a namespace-wide Factory::guessFactoryNamesUsing()
+     * override, which isn't safe to ship in the package itself: it's a
+     * single global static callback that would clobber a host app's own
+     * factory resolution).
+     */
+    protected static function newFactory(): ShortUrlFactory
+    {
+        return ShortUrlFactory::new();
+    }
+
     public function getRouteKeyName(): string
     {
         return 'url_key';

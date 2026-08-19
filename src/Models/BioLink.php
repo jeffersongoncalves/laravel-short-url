@@ -40,6 +40,11 @@ class BioLink extends Model
         return config('short-url.table_prefix', 'short_url_').'bio_links';
     }
 
+    protected static function newFactory(): BioLinkFactory
+    {
+        return BioLinkFactory::new();
+    }
+
     /**
      * @return BelongsTo<BioPage, $this>
      */

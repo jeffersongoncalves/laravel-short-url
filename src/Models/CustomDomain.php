@@ -55,6 +55,11 @@ class CustomDomain extends Model
         return config('short-url.table_prefix', 'short_url_').'custom_domains';
     }
 
+    protected static function newFactory(): CustomDomainFactory
+    {
+        return CustomDomainFactory::new();
+    }
+
     /**
      * @param  Builder<self>  $query
      */

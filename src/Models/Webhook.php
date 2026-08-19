@@ -51,6 +51,11 @@ class Webhook extends Model
         return config('short-url.table_prefix', 'short_url_').'webhooks';
     }
 
+    protected static function newFactory(): WebhookFactory
+    {
+        return WebhookFactory::new();
+    }
+
     public function handlesEvent(string $event): bool
     {
         return in_array('*', $this->events, true) || in_array($event, $this->events, true);

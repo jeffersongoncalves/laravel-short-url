@@ -44,6 +44,11 @@ class BioPage extends Model
         return config('short-url.table_prefix', 'short_url_').'bio_pages';
     }
 
+    protected static function newFactory(): BioPageFactory
+    {
+        return BioPageFactory::new();
+    }
+
     /**
      * @return HasMany<BioLink, $this>
      */

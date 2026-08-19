@@ -26,6 +26,11 @@ class Tag extends Model
         return config('short-url.table_prefix', 'short_url_').'tags';
     }
 
+    protected static function newFactory(): TagFactory
+    {
+        return TagFactory::new();
+    }
+
     /**
      * @return BelongsToMany<ShortUrl, $this>
      */
