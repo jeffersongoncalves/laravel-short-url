@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.3.0](https://github.com/jeffersongoncalves/laravel-short-url/compare/v1.2.1...v1.3.0) - 2026-08-19
+
+Factories for every model, not just the 9 that already had one.
+
+ApiKey::factory() threw class-not-found for a real consumer (a Filament plugin seeder) — it never used HasFactory at all. Auditing turned up 5 more models in the same state.
+
+- Added factories for ApiKey, AuditLog, WebhookDelivery, Alert, Conversion, and Visit.
+- Fixed two pre-existing factories that were broken standalone: BioLinkFactory never set bio_page_id (NOT NULL FK), AlertFactory never set triggered_at (NOT NULL) — both only worked because every caller in this repo's own tests passed an override.
+- Added a regression test that creates one of every factory-backed model with no attribute overrides, so the next broken or missing factory fails CI instead of surfacing downstream.
+
 ## [v1.2.1](https://github.com/jeffersongoncalves/laravel-short-url/compare/v1.2.0...v1.2.1) - 2026-08-19
 
 Fix: Model::factory() threw class-not-found outside this package's own tests.
