@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.2.1](https://github.com/jeffersongoncalves/laravel-short-url/compare/v1.2.0...v1.2.1) - 2026-08-19
+
+Fix: Model::factory() threw class-not-found outside this package's own tests.
+
+Every HasFactory model relied solely on Factory::guessFactoryNamesUsing() registered in tests/TestCase.php — a test-only hook, invisible to any real consumer (a Filament plugin, a seeder, tinker). Laravel's default resolver assumes the App\Models convention and never matches a package namespace, so ShortUrl::factory() (and the other 8 factory-backed models) failed for anyone outside this repo's own test suite.
+
+Fixed with newFactory() on each of the 9 HasFactory models — the standard, conflict-free mechanism (a global override would risk clobbering a host app's own factory resolution).
+
 ## [v1.2.0](https://github.com/jeffersongoncalves/laravel-short-url/compare/v1.1.0...v1.2.0) - 2026-08-18
 
 Cross-link stats aggregation and a global stats endpoint.
