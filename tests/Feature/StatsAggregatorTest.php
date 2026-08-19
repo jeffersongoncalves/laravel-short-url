@@ -14,7 +14,6 @@ it('merges historical daily_stats with live visits from today', function () {
         'date' => now()->subDay()->toDateString(),
         'visits_count' => 4,
         'unique_visits_count' => 3,
-        'qr_visits_count' => 1,
         'bot_visits_count' => 0,
         'device_stats' => json_encode(['desktop' => 4]),
         'browser_stats' => json_encode([]),

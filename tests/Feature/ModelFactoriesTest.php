@@ -1,10 +1,7 @@
 <?php
 
 use JeffersonGoncalves\LaravelShortUrl\Models\Alert;
-use JeffersonGoncalves\LaravelShortUrl\Models\ApiKey;
 use JeffersonGoncalves\LaravelShortUrl\Models\AuditLog;
-use JeffersonGoncalves\LaravelShortUrl\Models\BioLink;
-use JeffersonGoncalves\LaravelShortUrl\Models\BioPage;
 use JeffersonGoncalves\LaravelShortUrl\Models\Conversion;
 use JeffersonGoncalves\LaravelShortUrl\Models\CustomDomain;
 use JeffersonGoncalves\LaravelShortUrl\Models\Folder;
@@ -13,8 +10,6 @@ use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 use JeffersonGoncalves\LaravelShortUrl\Models\Tag;
 use JeffersonGoncalves\LaravelShortUrl\Models\UtmTemplate;
 use JeffersonGoncalves\LaravelShortUrl\Models\Visit;
-use JeffersonGoncalves\LaravelShortUrl\Models\Webhook;
-use JeffersonGoncalves\LaravelShortUrl\Models\WebhookDelivery;
 
 // Regression test: every HasFactory model here relies on newFactory() to
 // resolve its factory class — a global Factory::guessFactoryNamesUsing()
@@ -31,13 +26,8 @@ it('creates every factory-backed model without error', function (string $model) 
     Tag::class,
     UtmTemplate::class,
     Pixel::class,
-    Webhook::class,
-    BioPage::class,
-    BioLink::class,
-    ApiKey::class,
     Visit::class,
     Conversion::class,
     Alert::class,
     AuditLog::class,
-    WebhookDelivery::class,
 ]);

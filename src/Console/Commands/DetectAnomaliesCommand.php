@@ -6,7 +6,6 @@ use Illuminate\Console\Command;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\DB;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\VisitRepository;
-use JeffersonGoncalves\LaravelShortUrl\Contracts\WebhookDispatcher;
 use JeffersonGoncalves\LaravelShortUrl\Events\AlertTriggered;
 use JeffersonGoncalves\LaravelShortUrl\Models\Alert;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
@@ -75,15 +74,6 @@ class DetectAnomaliesCommand extends Command
         ]);
 
         AlertTriggered::dispatch($alert);
-
-        $shortUrl = ShortUrl::query()->find($shortUrlId);
-
-        app(WebhookDispatcher::class)->dispatch('alert.triggered', [
-            'alert_id' => $alert->id,
-            'short_url_id' => $shortUrlId,
-            'type' => $alert->type,
-            'severity' => $alert->severity,
-        ], $shortUrl);
 
         (new AnonymousNotifiable)
             ->route('mail', (array) config('short-url.notifications.mail_to', []))

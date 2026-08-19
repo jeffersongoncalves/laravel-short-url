@@ -60,7 +60,6 @@ class EloquentVisitRepository implements VisitRepository
         return [
             'visits_count' => $visits->where('is_bot', false)->count(),
             'unique_visits_count' => $visits->where('is_bot', false)->unique('ip_hash')->count(),
-            'qr_visits_count' => $visits->where('is_qr_scan', true)->count(),
             'bot_visits_count' => $visits->where('is_bot', true)->count(),
             'device_stats' => $this->counts($visits, 'device_type'),
             'browser_stats' => $this->counts($visits, 'browser'),

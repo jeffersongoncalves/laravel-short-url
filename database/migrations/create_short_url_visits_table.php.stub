@@ -38,7 +38,7 @@ return new class extends Migration
 
             $table->string('referer_url', 2048)->nullable();
             $table->string('referer_host')->nullable();
-            $table->string('referer_type', 20)->nullable(); // direct|social|search|email|qr|internal — validated at app layer
+            $table->string('referer_type', 20)->nullable(); // direct|social|search|email|internal — validated at app layer
 
             $table->string('browser_language', 20)->nullable();
             $table->string('user_agent_hash', 64)->nullable();
@@ -49,7 +49,6 @@ return new class extends Migration
             $table->string('utm_term')->nullable();
             $table->string('utm_content')->nullable();
 
-            $table->boolean('is_qr_scan')->default(false);
             $table->boolean('is_bot')->default(false);
             $table->boolean('is_vpn')->default(false);
             $table->boolean('is_proxy')->default(false);

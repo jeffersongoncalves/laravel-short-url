@@ -35,7 +35,7 @@ it('parses JSONEachRow rows from a query', function () {
 
 it('builds an aggregate payload from multiple queries', function () {
     Http::fakeSequence()
-        ->push('{"visits_count":5,"unique_visits_count":4,"qr_visits_count":1,"bot_visits_count":0}')
+        ->push('{"visits_count":5,"unique_visits_count":4,"bot_visits_count":0}')
         ->whenEmpty(Http::response(''));
 
     $result = (new ClickHouseVisitRepository)->aggregate(1, now()->subDay(), now());
@@ -48,7 +48,7 @@ it('builds an aggregate payload from multiple queries', function () {
 
 it('builds an aggregate payload across multiple short_url_ids', function () {
     Http::fakeSequence()
-        ->push('{"visits_count":9,"unique_visits_count":7,"qr_visits_count":2,"bot_visits_count":1}')
+        ->push('{"visits_count":9,"unique_visits_count":7,"bot_visits_count":1}')
         ->whenEmpty(Http::response(''));
 
     $result = (new ClickHouseVisitRepository)->aggregateMany([1, 2, 3], now()->subDay(), now());

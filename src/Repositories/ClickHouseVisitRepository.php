@@ -87,7 +87,6 @@ class ClickHouseVisitRepository implements VisitRepository
         $result = [
             'visits_count' => 0,
             'unique_visits_count' => 0,
-            'qr_visits_count' => 0,
             'bot_visits_count' => 0,
         ];
 
@@ -111,15 +110,13 @@ class ClickHouseVisitRepository implements VisitRepository
             "SELECT
                 countIf(is_bot = 0) AS visits_count,
                 uniqIf(ip_hash, is_bot = 0) AS unique_visits_count,
-                countIf(is_qr_scan = 1) AS qr_visits_count,
                 countIf(is_bot = 1) AS bot_visits_count
             FROM {$table} WHERE {$range} FORMAT JSONEachRow"
-        )[0] ?? ['visits_count' => 0, 'unique_visits_count' => 0, 'qr_visits_count' => 0, 'bot_visits_count' => 0];
+        )[0] ?? ['visits_count' => 0, 'unique_visits_count' => 0, 'bot_visits_count' => 0];
 
         $result = [
             'visits_count' => (int) $totals['visits_count'],
             'unique_visits_count' => (int) $totals['unique_visits_count'],
-            'qr_visits_count' => (int) $totals['qr_visits_count'],
             'bot_visits_count' => (int) $totals['bot_visits_count'],
         ];
 

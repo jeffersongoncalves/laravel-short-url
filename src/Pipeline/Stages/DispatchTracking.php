@@ -50,7 +50,6 @@ class DispatchTracking
             'is_bot' => (bool) ($context->tracking['is_bot'] ?? false),
             'device_type' => $context->tracking['device_type'] ?? null,
             'operating_system' => $context->tracking['operating_system'] ?? null,
-            'is_qr_scan' => (bool) ($context->tracking['is_qr_scan'] ?? false),
             'is_vpn' => (bool) ($context->tracking['is_vpn'] ?? false),
             'is_proxy' => (bool) ($context->tracking['is_proxy'] ?? false),
             'is_tor' => (bool) ($context->tracking['is_tor'] ?? false),

@@ -42,7 +42,6 @@ return new class extends Migration
             $table->unsignedBigInteger('max_visits')->nullable();
             $table->unsignedBigInteger('total_visits')->default(0);
             $table->unsignedBigInteger('unique_visits')->default(0);
-            $table->unsignedBigInteger('qr_scans')->default(0);
             $table->unsignedBigInteger('bot_visits')->default(0);
 
             $table->timestamp('activated_at')->nullable();
@@ -56,14 +55,8 @@ return new class extends Migration
             $table->boolean('show_warning_page')->default(false);
             $table->text('warning_message')->nullable();
 
-            $table->boolean('auto_open_app_mobile')->default(false);
-            $table->string('app_scheme_override')->nullable();
-
             $table->string('ga_tracking_id')->nullable();
             $table->string('ga_api_secret_override')->nullable();
-
-            $table->string('webhook_url')->nullable();
-            $table->string('webhook_secret')->nullable();
 
             $table->json('targeting_rules')->nullable();
             $table->json('rotation_variants')->nullable();
@@ -78,8 +71,6 @@ return new class extends Migration
             $table->string('og_title')->nullable();
             $table->text('og_description')->nullable();
             $table->string('og_image_path')->nullable();
-
-            $table->json('qr_design')->nullable();
 
             $table->string('safe_browsing_status')->nullable();
             $table->timestamp('safe_browsing_checked_at')->nullable();

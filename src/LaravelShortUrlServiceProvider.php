@@ -15,21 +15,18 @@ use JeffersonGoncalves\LaravelShortUrl\Console\Commands\AggregateAndPruneCommand
 use JeffersonGoncalves\LaravelShortUrl\Console\Commands\CheckSafeBrowsingCommand;
 use JeffersonGoncalves\LaravelShortUrl\Console\Commands\DetectAnomaliesCommand;
 use JeffersonGoncalves\LaravelShortUrl\Console\Commands\ImportCommand;
-use JeffersonGoncalves\LaravelShortUrl\Console\Commands\PruneWebhookDeliveriesCommand;
 use JeffersonGoncalves\LaravelShortUrl\Console\Commands\SendScheduledReportsCommand;
 use JeffersonGoncalves\LaravelShortUrl\Console\Commands\SyncCountersCommand;
 use JeffersonGoncalves\LaravelShortUrl\Console\Commands\VerifyDomainsCommand;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\ConversionApiDispatcher;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\DnsVerifier;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\GeoIpDriver;
-use JeffersonGoncalves\LaravelShortUrl\Contracts\QrCodeBuilder;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\SafeBrowsingChecker;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\SettingsRepository;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\StatsAggregator;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\TargetingResolver;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\VisitRepository;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\VpnDetectionDriver;
-use JeffersonGoncalves\LaravelShortUrl\Contracts\WebhookDispatcher;
 use JeffersonGoncalves\LaravelShortUrl\Conversions\GoogleEnhancedConversionsDispatcher;
 use JeffersonGoncalves\LaravelShortUrl\Conversions\LinkedInCapiDispatcher;
 use JeffersonGoncalves\LaravelShortUrl\Conversions\MetaCapiDispatcher;
@@ -47,9 +44,7 @@ use JeffersonGoncalves\LaravelShortUrl\Observers\AuditLogObserver;
 use JeffersonGoncalves\LaravelShortUrl\Observers\CustomDomainObserver;
 use JeffersonGoncalves\LaravelShortUrl\Observers\ShortUrlObserver;
 use JeffersonGoncalves\LaravelShortUrl\Policies\ShortUrlPolicy;
-use JeffersonGoncalves\LaravelShortUrl\Qr\EndroidQrCodeBuilder;
 use JeffersonGoncalves\LaravelShortUrl\Registries\AnalyticsDriverRegistry;
-use JeffersonGoncalves\LaravelShortUrl\Registries\DeepLinkRegistry;
 use JeffersonGoncalves\LaravelShortUrl\Registries\FilterTypeRegistry;
 use JeffersonGoncalves\LaravelShortUrl\Registries\ImporterDriverRegistry;
 use JeffersonGoncalves\LaravelShortUrl\Registries\PixelProviderRegistry;
@@ -64,7 +59,6 @@ use JeffersonGoncalves\LaravelShortUrl\Stats\EloquentStatsAggregator;
 use JeffersonGoncalves\LaravelShortUrl\Targeting\RuleBasedTargetingResolver;
 use JeffersonGoncalves\LaravelShortUrl\Tenancy\PlanLimits;
 use JeffersonGoncalves\LaravelShortUrl\Tenancy\TenantContext;
-use JeffersonGoncalves\LaravelShortUrl\Webhooks\EloquentWebhookDispatcher;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -73,12 +67,6 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
     public static string $name = 'laravel-short-url';
 
     /**
-     * Dependency order, not alphabetical — bio_pages must run before
-     * bio_links since the latter has a foreign key to it. Real installs
-     * get this order for free (vendor:publish timestamps files in this
-     * array order), but tests/TestCase.php's own migration loader also
-     * reads this list to reproduce the same order.
-     *
      * @var array<int, string>
      */
     public const MIGRATIONS = [
@@ -88,17 +76,12 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
         'create_short_url_daily_stats_table',
         'create_short_url_custom_domains_table',
         'create_short_url_audit_logs_table',
-        'create_short_url_api_keys_table',
-        'create_short_url_webhooks_table',
-        'create_short_url_webhook_deliveries_table',
         'create_short_url_conversions_table',
         'create_short_url_alerts_table',
         'create_short_url_pixels_table',
         'create_short_url_folders_table',
         'create_short_url_tags_table',
         'create_short_url_utm_templates_table',
-        'create_short_url_bio_pages_table',
-        'create_short_url_bio_links_table',
     ];
 
     public function configurePackage(Package $package): void
@@ -109,13 +92,12 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
             ->hasMigrations(static::MIGRATIONS)
             ->hasTranslations()
             ->hasViews()
-            ->hasRoutes(['web', 'api'])
+            ->hasRoutes(['web'])
             ->hasCommands([
                 SyncCountersCommand::class,
                 AggregateAndPruneCommand::class,
                 VerifyDomainsCommand::class,
                 CheckSafeBrowsingCommand::class,
-                PruneWebhookDeliveriesCommand::class,
                 DetectAnomaliesCommand::class,
                 SendScheduledReportsCommand::class,
                 ImportCommand::class,
@@ -130,10 +112,8 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
         $this->app->singleton(ShortUrlManager::class);
         $this->app->singleton(CounterBuffer::class);
         $this->app->singleton(FilterTypeRegistry::class);
-        $this->app->singleton(DeepLinkRegistry::class);
         $this->app->singleton(PixelProviderRegistry::class);
         $this->app->singleton(DnsVerifier::class, NativeDnsVerifier::class);
-        $this->app->bind(QrCodeBuilder::class, EndroidQrCodeBuilder::class);
 
         $this->app->singleton(VisitRepository::class, fn () => match (config('short-url.tracking.driver', 'eloquent')) {
             'clickhouse' => new ClickHouseVisitRepository,
@@ -158,7 +138,6 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
             default => new IpApiVpnDetectionDriver,
         });
 
-        $this->app->singleton(WebhookDispatcher::class, EloquentWebhookDispatcher::class);
         $this->app->singleton(AnalyticsDriverRegistry::class);
 
         $this->app->bind(ConversionApiDispatcher::class, fn () => match (config('short-url.conversions.driver', 'none')) {
@@ -179,7 +158,6 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
         Gate::policy(ShortUrl::class, ShortUrlPolicy::class);
 
         $this->app->make(FilterTypeRegistry::class)->registerDefaults();
-        $this->app->make(DeepLinkRegistry::class)->registerDefaults();
         $this->app->make(PixelProviderRegistry::class)->registerDefaults();
 
         $analyticsDrivers = $this->app->make(AnalyticsDriverRegistry::class);
@@ -214,7 +192,6 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
 
             $schedule->command(DetectAnomaliesCommand::class)->hourly();
             $schedule->command(SendScheduledReportsCommand::class)->daily();
-            $schedule->command(PruneWebhookDeliveriesCommand::class)->weekly();
         });
     }
 }

@@ -1,6 +1,6 @@
 ## Laravel Short URL Package
 
-The `jeffersongoncalves/laravel-short-url` package is a headless URL-shortening engine: redirect pipeline, analytics, targeting rules, custom domains, webhooks, conversion tracking, QR codes, multi-tenancy, and link-in-bio. No Filament dependency — everything is reached through the `ShortUrl` facade, its contracts, the REST API, or console commands.
+The `jeffersongoncalves/laravel-short-url` package is a headless URL-shortening engine: redirect pipeline, analytics, targeting rules, custom domains, conversion tracking, multi-tenancy. No Filament dependency — everything is reached through the `ShortUrl` facade, its contracts, or console commands.
 
 ### Package Namespace
 
@@ -11,8 +11,8 @@ All classes are under `JeffersonGoncalves\LaravelShortUrl`.
 - **Facade**: `JeffersonGoncalves\LaravelShortUrl\Facades\ShortUrl` — `create()`, `destination()`, `resolve()`
 - **Manager/Builder**: `ShortUrlManager` (facade target), `ShortUrlBuilder` (fluent creation)
 - **Redirect pipeline**: `RedirectPipeline` running stages in `src/Pipeline/Stages/` — cache-backed, each stage can short-circuit with a `Response`
-- **Contracts**: `src/Contracts/` — `VisitRepository`, `GeoIpDriver`, `VpnDetectionDriver`, `AnalyticsDriver`, `SafeBrowsingChecker`, `QrCodeBuilder`, `StatsAggregator`, `TargetingResolver`, `DnsVerifier`, `SettingsRepository`, `WebhookDispatcher`, `ImporterDriver`, `ConversionApiDispatcher`
-- **Registries** (use `extend()`, not rebind): `AnalyticsDriverRegistry`, `DeepLinkRegistry`, `PixelProviderRegistry`, `FilterTypeRegistry`, `ImporterDriverRegistry`
+- **Contracts**: `src/Contracts/` — `VisitRepository`, `GeoIpDriver`, `VpnDetectionDriver`, `AnalyticsDriver`, `SafeBrowsingChecker`, `StatsAggregator`, `TargetingResolver`, `DnsVerifier`, `SettingsRepository`, `ImporterDriver`, `ConversionApiDispatcher`
+- **Registries** (use `extend()`, not rebind): `AnalyticsDriverRegistry`, `PixelProviderRegistry`, `FilterTypeRegistry`, `ImporterDriverRegistry`
 
 ### Key Conventions
 
@@ -91,17 +91,13 @@ $this->app->make(AnalyticsDriverRegistry::class)
 
 Built-in analytics drivers: GA4, Plausible, PostHog, Matomo, Umami, Mixpanel, Segment — each gated by `short-url.analytics.{name}.enabled`. Built-in conversion API dispatchers: Meta, Google Enhanced Conversions, TikTok, LinkedIn — selected via `short-url.conversions.driver`.
 
-### REST API
-
-Disabled by default (`short-url.api`). API-key auth with per-key abilities (`links:read`, `links:write`, `conversions:write`, ...). Base path `/api/short-url/v1`: `links` (CRUD, bulk create up to 500), `links/{uuid}/stats`, `stats` (global breakdown, optionally `?folder_id=`/`?tag_id=`), `links/{uuid}/visits`, `domains`, `webhooks`, `conversions`, `export/csv`. `links` accepts and returns `custom_domain_id`, `utm_source`/`utm_medium`/`utm_campaign`/`utm_term`/`utm_content`, `utm_template_id`, and a ready-to-use `short_url`.
-
 ### Cross-Link Stats
 
 Never compute your own aggregation over `short_url_visits`/`short_url_daily_stats` for a multi-link (dashboard) breakdown — `Contracts\StatsAggregator::forShortUrls(array $shortUrlIds)` does it (same contract as `for($shortUrl)`, just summed across the set). Resolving which links belong in the set — a folder, a tag, everything a tenant owns — is the caller's job via `ShortUrl`'s own tenant-scoped Eloquent query; the aggregator only does the math.
 
 ### Required UTM Enforcement
 
-`short-url.utm.required` (e.g. `['utm_medium']`) makes `ShortUrlManager` reject creating/updating a link that doesn't declare those fields — enforced once in the manager, so it's uniform across the facade, builder, REST API, and every importer.
+`short-url.utm.required` (e.g. `['utm_medium']`) makes `ShortUrlManager` reject creating/updating a link that doesn't declare those fields — enforced once in the manager, so it's uniform across the facade, builder, and every importer.
 
 ### Events
 

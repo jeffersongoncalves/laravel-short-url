@@ -2,10 +2,6 @@
 
 use JeffersonGoncalves\LaravelShortUrl\Support\RefererClassifier;
 
-it('classifies a qr scan regardless of referer', function () {
-    expect(RefererClassifier::classify(null, 'short.test', true))->toBe('qr');
-});
-
 it('classifies a missing referer as direct', function () {
     expect(RefererClassifier::classify(null, 'short.test'))->toBe('direct');
 });

@@ -16,7 +16,7 @@ class CsvLinkExporter
      */
     protected const COLUMNS = [
         'uuid', 'url_key', 'destination_url', 'title', 'is_enabled',
-        'total_visits', 'unique_visits', 'qr_scans', 'created_at',
+        'total_visits', 'unique_visits', 'created_at',
     ];
 
     public function toCsvString(): string

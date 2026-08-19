@@ -262,43 +262,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | REST API
-    |--------------------------------------------------------------------------
-    |
-    | Off by default — the API surfaces every link's destination and stats
-    | over HTTP, so it's an explicit opt-in. Authenticated via a Bearer
-    | short_url_api_keys token (see ApiKeyAuth), not the host app's own
-    | auth guard.
-    |
-    */
-    'api' => [
-        'enabled' => env('SHORT_URL_API_ENABLED', false),
-        'prefix' => env('SHORT_URL_API_PREFIX', 'api/short-url/v1'),
-
-        'rate_limit' => [
-            'max_attempts' => env('SHORT_URL_API_RATE_LIMIT_MAX_ATTEMPTS', 300),
-            'decay_seconds' => env('SHORT_URL_API_RATE_LIMIT_DECAY_SECONDS', 60),
-        ],
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Webhooks
-    |--------------------------------------------------------------------------
-    |
-    | - retry_seconds: delay before each retry attempt, in order.
-    | - max_failures: consecutive failures (across all attempts of all
-    |   deliveries) before a webhook is auto-disabled.
-    |
-    */
-    'webhooks' => [
-        'retry_seconds' => [10, 60, 300],
-        'max_failures' => env('SHORT_URL_WEBHOOK_MAX_FAILURES', 20),
-        'delivery_retention_days' => env('SHORT_URL_WEBHOOK_DELIVERY_RETENTION_DAYS', 30),
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | Analytics Drivers
     |--------------------------------------------------------------------------
     |
@@ -404,51 +367,9 @@ return [
         'mail_to' => array_filter(explode(',', (string) env('SHORT_URL_NOTIFY_MAIL_TO', ''))),
         'database_enabled' => env('SHORT_URL_NOTIFY_DATABASE_ENABLED', false),
         'broadcast_enabled' => env('SHORT_URL_NOTIFY_BROADCAST_ENABLED', false),
-        'slack_webhook_url' => env('SHORT_URL_NOTIFY_SLACK_WEBHOOK_URL'),
-        'discord_webhook_url' => env('SHORT_URL_NOTIFY_DISCORD_WEBHOOK_URL'),
-        'teams_webhook_url' => env('SHORT_URL_NOTIFY_TEAMS_WEBHOOK_URL'),
         'telegram_bot_token' => env('SHORT_URL_NOTIFY_TELEGRAM_BOT_TOKEN'),
         'telegram_chat_id' => env('SHORT_URL_NOTIFY_TELEGRAM_CHAT_ID'),
         'scheduled_reports_enabled' => env('SHORT_URL_SCHEDULED_REPORTS_ENABLED', false),
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | QR Codes
-    |--------------------------------------------------------------------------
-    |
-    | Requires the optional endroid/qr-code package (see composer.json
-    | "suggest"). driver is currently fixed to "endroid" — the config key
-    | exists for a future alternate driver.
-    |
-    */
-    'qr' => [
-        'driver' => env('SHORT_URL_QR_DRIVER', 'endroid'),
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Deep Links (mobile app opening)
-    |--------------------------------------------------------------------------
-    |
-    | - aasa/assetlinks: serve the well-known files iOS/Android need to
-    |   trust this domain for Universal/App Links. Off by default and
-    |   require operator-supplied app identifiers — the package has no way
-    |   to know the host app's Apple Team ID or Android signing fingerprint.
-    |
-    */
-    'deep_links' => [
-        'aasa' => [
-            'enabled' => env('SHORT_URL_AASA_ENABLED', false),
-            // e.g. ['TEAMID.com.example.app']
-            'app_ids' => array_filter(explode(',', (string) env('SHORT_URL_AASA_APP_IDS', ''))),
-            'paths' => ['*'],
-        ],
-        'assetlinks' => [
-            'enabled' => env('SHORT_URL_ASSETLINKS_ENABLED', false),
-            // Populate via config/short-url.php override: [['package' => 'com.example.app', 'fingerprints' => ['AA:BB:...']]]
-            'apps' => [],
-        ],
     ],
 
     /*
@@ -484,7 +405,7 @@ return [
     | Off by default — the package works standalone (single tenant) with
     | stancl/tenancy entirely absent. Turning this on:
     | - scopes every tenant_id-bearing model (ShortUrl, CustomDomain,
-    |   ApiKey, Webhook, Folder, Tag, UtmTemplate, Pixel) and the settings
+    |   Folder, Tag, UtmTemplate, Pixel) and the settings
     |   table to the current tenant, resolved via stancl/tenancy's tenant()
     |   helper when installed, else current_tenant_id below.
     | - enforces the plan limits below on link/domain creation.
@@ -509,22 +430,6 @@ return [
                 'retention_days' => null,
             ],
         ],
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Link-in-Bio
-    |--------------------------------------------------------------------------
-    |
-    | Off by default. Public pages render at /{prefix}/{handle} (default
-    | "bio"), deliberately never at the app root, so a handle can never
-    | collide with a short url key. Building/editing pages is the plugin's
-    | job — this package only stores the data model and renders/tracks.
-    |
-    */
-    'bio' => [
-        'enabled' => env('SHORT_URL_BIO_ENABLED', false),
-        'prefix' => env('SHORT_URL_BIO_PREFIX', 'bio'),
     ],
 
     // Additional keys for future phases will be added here.

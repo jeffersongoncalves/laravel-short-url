@@ -21,7 +21,6 @@ class DetectBot
         $context->tracking['is_bot'] = BotDetector::isBot($userAgent);
         $context->tracking['device_type'] = UserAgentParser::fastDeviceType($userAgent);
         $context->tracking['operating_system'] = UserAgentParser::fastOperatingSystem($userAgent);
-        $context->tracking['is_qr_scan'] = $context->request->query('source') === 'qr';
 
         return $next($context);
     }

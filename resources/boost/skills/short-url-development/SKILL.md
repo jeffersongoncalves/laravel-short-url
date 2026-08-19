@@ -7,7 +7,7 @@ description: Build URL shortening, link analytics, and redirect features using t
 
 ## When to use this skill
 
-Use this skill when implementing short link creation, redirects, click analytics, A/B/split testing on destinations, targeting rules, custom domains, QR codes, webhooks, conversion tracking, or link-in-bio pages in a Laravel application using the `jeffersongoncalves/laravel-short-url` package. The package is headless — no Filament dependency, no bundled admin UI — so every feature here is reached through the `ShortUrl` facade, its contracts, the REST API, or console commands.
+Use this skill when implementing short link creation, redirects, click analytics, A/B/split testing on destinations, targeting rules, custom domains, or conversion tracking in a Laravel application using the `jeffersongoncalves/laravel-short-url` package. The package is headless — no Filament dependency, no bundled admin UI — so every feature here is reached through the `ShortUrl` facade, its contracts, or console commands.
 
 ## Setup
 
@@ -70,7 +70,7 @@ $link = ShortUrl::destination('https://example.com/product')
 
 These values get attached to the destination URL on redirect (`BuildFinalUrl` stage — `strip_utm_from_destination` drops the click's own incoming `utm_*` first if you want the link's tag to be the only one that lands), and become the default attribution on the recorded `Visit` whenever the click's own query string doesn't specify `utm_*` — so a link generated for one specific channel is still correctly attributed even if the person sharing it doesn't append query params.
 
-Set `short-url.utm.required` (e.g. `['utm_medium']`) to make `ShortUrlManager::create()`/`update()` reject a link that doesn't declare those fields — directly, or via a template. This is enforced once, in the manager, so it applies uniformly across the facade, builder, REST API, and every importer (`CsvImporterDriver`, `BitlyImporterDriver`) — never re-implement this check at a call site.
+Set `short-url.utm.required` (e.g. `['utm_medium']`) to make `ShortUrlManager::create()`/`update()` reject a link that doesn't declare those fields — directly, or via a template. This is enforced once, in the manager, so it applies uniformly across the facade, builder, and every importer (`CsvImporterDriver`, `BitlyImporterDriver`) — never re-implement this check at a call site.
 
 ## Destination types
 
@@ -138,21 +138,11 @@ $ids = ShortUrl::query()->where('folder_id', $folder->id)->pluck('id')->all();
 $stats = app(StatsAggregator::class)->forShortUrls($ids)->between(now()->subDays(7), now())->get();
 ```
 
-`GET /api/short-url/v1/stats` (optionally `?folder_id=`/`?tag_id=`) is the REST equivalent — use it (or `forShortUrls()` directly) instead of querying `short_url_visits`/`short_url_daily_stats` yourself for a cross-link breakdown; a plugin or app built on this package should never compute its own aggregation.
+Use `forShortUrls()` instead of querying `short_url_visits`/`short_url_daily_stats` yourself for a cross-link breakdown; a plugin or app built on this package should never compute its own aggregation.
 
 External forwarding is config-gated per provider under `short-url.analytics.*` (`enabled` + credentials) — GA4, Plausible, PostHog, Matomo, Umami, Mixpanel, Segment ship built in. Add another provider with `AnalyticsDriverRegistry::extend()` in a service provider's `boot()`, implementing `Contracts\AnalyticsDriver::record(array $visit): void`.
 
 ## Conversion tracking
-
-```php
-// POST /api/short-url/v1/conversions (requires the conversions:write ability)
-[
-    'url_key' => 'promo25',       // or short_url_uuid
-    'event_name' => 'purchase',
-    'value' => 49.90,
-    'currency' => 'USD',
-]
-```
 
 Recording a conversion always persists it locally; `short-url.conversions.driver` (`meta`, `google`, `tiktok`, `linkedin`, or `none`) additionally forwards it server-to-server via `Contracts\ConversionApiDispatcher`. A dispatcher failure never throws back to the caller — it's caught and reported.
 
@@ -174,15 +164,6 @@ Off by default (`short-url.domains.enabled`) so a plain install never pays for t
 
 Entirely feature-flagged (`short-url.tenancy.enabled`), off by default and a complete no-op when off. When on, the tenant id resolves via `stancl/tenancy`'s `tenant()` helper if installed, otherwise `short-url.tenancy.current_tenant_id`. Per-plan limits (`links_per_month`, `domains`, `retention_days`) live in `short-url.tenancy.plans.*` and are resolved through `Tenancy\PlanLimits`; a plan is picked by a host-supplied `plan_resolver` Closure, defaulting to `"default"`. `short-url:aggregate-and-prune` applies each tenant's own `retention_days` when tenancy is enabled, falling back to the package-wide `short-url.tracking.retention_days` otherwise.
 
-## Webhooks
-
-```php
-// POST /api/short-url/v1/webhooks
-['url' => 'https://example.com/hook', 'events' => ['link.visited', 'conversion.recorded'], 'short_url_id' => null] // null = global (all links)
-```
-
-Deliveries are HMAC-SHA256 signed with an anti-replay timestamp header, retried at 10s/60s/300s, and auto-disabled after consecutive failures (manually replayable via the API). Dispatch a custom event yourself with `app(Contracts\WebhookDispatcher::class)->dispatch('custom.event', $payload, $shortUrl)`.
-
 ## Events
 
 | Event | Properties |
@@ -197,12 +178,12 @@ Every swappable piece is an interface under `src/Contracts/`, bound to a default
 
 ```php
 VisitRepository, GeoIpDriver, VpnDetectionDriver, AnalyticsDriver,
-SafeBrowsingChecker, QrCodeBuilder, StatsAggregator, TargetingResolver,
-DnsVerifier, SettingsRepository, WebhookDispatcher, ImporterDriver,
+SafeBrowsingChecker, StatsAggregator, TargetingResolver,
+DnsVerifier, SettingsRepository, ImporterDriver,
 ConversionApiDispatcher
 
 // Registries (extend() instead of rebind — multiple drivers coexist)
-FilterTypeRegistry, AnalyticsDriverRegistry, DeepLinkRegistry,
+FilterTypeRegistry, AnalyticsDriverRegistry,
 PixelProviderRegistry, ImporterDriverRegistry
 ```
 
@@ -218,7 +199,6 @@ PixelProviderRegistry, ImporterDriverRegistry
 | `short-url:check-safe-browsing` | daily |
 | `short-url:detect-anomalies` | hourly |
 | `short-url:send-scheduled-reports` | daily |
-| `short-url:prune-webhook-deliveries` | weekly |
 | `short-url:import {driver} {source}` | manual — `csv` ships in, `bitly` is the reference per-provider importer |
 
 All self-register with the scheduler in `packageBooted()`, respecting their own config toggles — you don't need to add them to your `Kernel`/`bootstrap/app.php` schedule yourself.

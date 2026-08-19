@@ -14,7 +14,6 @@ it('folds yesterdays visits into a daily_stats row and prunes old visits', funct
         'visited_at' => now()->subDay()->setTime(10, 0),
         'country_code' => 'BR',
         'is_bot' => false,
-        'is_qr_scan' => false,
         'ip_hash' => 'hash-1',
         'created_at' => now()->subDay(),
     ]);

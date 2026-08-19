@@ -10,13 +10,13 @@
 [![Tests](https://img.shields.io/github/actions/workflow/status/jeffersongoncalves/laravel-short-url/tests.yml?branch=master&label=tests&style=flat-square)](https://github.com/jeffersongoncalves/laravel-short-url/actions/workflows/tests.yml)
 [![Total Downloads](https://img.shields.io/packagist/dt/jeffersongoncalves/laravel-short-url.svg?style=flat-square)](https://packagist.org/packages/jeffersongoncalves/laravel-short-url)
 
-Headless URL-shortening engine for Laravel. Zero dependency on Filament — works standalone in any Laravel app via its Facade, REST API, or console commands.
+Headless URL-shortening engine for Laravel. Zero dependency on Filament — works standalone in any Laravel app via its Facade or console commands.
 
 ## Why this package
 
-- **High throughput.** The redirect pipeline is a chain of independent, testable stages (`Illuminate\Pipeline`), with the resolved link cached and analytics writes made asynchronous — no external integration failure (GeoIP, Safe Browsing, VPN detection, webhooks) can ever break a redirect.
-- **Contract-driven.** Every swappable piece — analytics driver, conversion API dispatcher, DNS verifier, QR code builder, Safe Browsing checker, VPN detector — is an interface under `src/Contracts/`, with a default implementation and extensible registries (`AnalyticsDriverRegistry`, `DeepLinkRegistry`, `PixelProviderRegistry`, `FilterTypeRegistry`, `ImporterDriverRegistry`).
-- **Minimal dependencies.** Only `spatie/laravel-package-tools` and `illuminate/contracts` are required. GeoIP (MaxMind), QR codes (`endroid/qr-code`), multi-tenancy (`stancl/tenancy`) and Redis (`predis/predis`) are all optional — the package works perfectly without them, each integration guarded by `class_exists`/a feature flag.
+- **High throughput.** The redirect pipeline is a chain of independent, testable stages (`Illuminate\Pipeline`), with the resolved link cached and analytics writes made asynchronous — no external integration failure (GeoIP, Safe Browsing, VPN detection) can ever break a redirect.
+- **Contract-driven.** Every swappable piece — analytics driver, conversion API dispatcher, DNS verifier, Safe Browsing checker, VPN detector — is an interface under `src/Contracts/`, with a default implementation and extensible registries (`AnalyticsDriverRegistry`, `PixelProviderRegistry`, `FilterTypeRegistry`, `ImporterDriverRegistry`).
+- **Minimal dependencies.** Only `spatie/laravel-package-tools` and `illuminate/contracts` are required. GeoIP (MaxMind), multi-tenancy (`stancl/tenancy`) and Redis (`predis/predis`) are all optional — the package works perfectly without them, each integration guarded by `class_exists`/a feature flag.
 - **Multi-language.** pt_BR, en and es ship out of the box — no hardcoded strings outside `resources/lang`.
 
 ## Requirements
@@ -81,7 +81,7 @@ $link = ShortUrl::destination('https://example.com/product')
 
 These values are attached to the destination URL on redirect (see `strip_utm_from_destination` to drop the click's own incoming `utm_*` first) and become the default attribution recorded on the visit whenever the click itself carries no `utm_*` of its own — so a link generated specifically for SMS is still correctly attributed even if whoever forwards it doesn't append query params by hand.
 
-Set `short-url.utm.required` (e.g. `['utm_medium']`) to make `ShortUrlManager` reject creating — or updating — a link that doesn't declare those fields, directly or via a template. Enforced everywhere a link is created (facade, builder, REST API, CSV/Bitly import), not just at the API layer.
+Set `short-url.utm.required` (e.g. `['utm_medium']`) to make `ShortUrlManager` reject creating — or updating — a link that doesn't declare those fields, directly or via a template. Enforced everywhere a link is created (facade, builder, CSV/Bitly import).
 
 ## Destination types
 
@@ -124,6 +124,8 @@ ResolveHost → RateLimit → ResolveShortUrl(cache) → DetectBot → DetectVpn
 → BuildFinalUrl → RenderInterstitial → Respond → DispatchTracking
 ```
 
+`RenderInterstitial` only fires when the link has attached retargeting pixels.
+
 Each stage can short-circuit by returning a `Response` directly (wrong password, destination warning, expired link, blocked VPN, plan limit). The resolved link is cached (`{host}:{key}`) and invalidated automatically on `saved`/`deleted`.
 
 ## Feature overview
@@ -136,41 +138,22 @@ Each stage can short-circuit by returning a `Response` directly (wrong password,
 | **Custom domains** | DNS verification (TXT/CNAME/A), per-domain routing, wildcard support, root redirect. |
 | **Security** | Bcrypt password protection, signed-token warning page, Google Safe Browsing (sync or async blocking), VPN/proxy detection (flag or 403 block), rate limiting, full audit trail (before/after). |
 | **Compliance** | Configurable retention (package-wide or per tenant plan), per-subject data export/deletion (LGPD/GDPR), analytics-only mode (no PII stored). |
-| **REST API** | `/api/short-url/v1` (disabled by default), API-key auth with abilities, per-key rate limiting, link CRUD (accepts and returns `custom_domain_id`, `utm_*`, `utm_template_id`, and a ready-to-use `short_url`), bulk create (up to 500), per-link and global (`GET /stats`) breakdowns, visits, domains, webhooks, conversions. |
-| **Webhooks** | HMAC-SHA256 + anti-replay timestamp, retries at 10s/60s/300s, manual replay, auto-disable after consecutive failures. |
 | **External analytics** | GA4, Plausible, PostHog, Matomo, Umami, Mixpanel, and Segment built in; `AnalyticsDriverRegistry::extend()` to add any other provider. |
-| **Conversion tracking** | Server-to-server forwarding to Meta CAPI, Google Enhanced Conversions, TikTok Events API, and LinkedIn CAPI on `POST /conversions`. |
-| **Alerts** | Z-score anomaly detection against a 7-day baseline, notifications via mail, database, broadcast, Slack, Discord, Telegram, Teams. |
-| **QR codes** | SVG/PNG/PDF/EPS export (via the optional `endroid/qr-code`), scan tracking (`?source=qr`). |
-| **Deep links & pixels** | Mobile app opening via custom URL scheme, 10 pre-registered apps, optional AASA/assetlinks serving, retargeting pixels (Meta, Google Ads, TikTok, GA4) with an optional consent banner. |
+| **Conversion tracking** | Server-to-server forwarding to Meta CAPI, Google Enhanced Conversions, TikTok Events API, and LinkedIn CAPI when a conversion is recorded via `ConversionApiDispatcher`. |
+| **Alerts** | Z-score anomaly detection against a 7-day baseline, notifications via mail, database, broadcast, Telegram. |
+| **Pixels** | Retargeting pixels (Meta, Google Ads, TikTok, GA4) rendered on the interstitial, with an optional consent banner. |
 | **Organization** | Hierarchical folders, tags, reusable UTM templates ("campaigns"), archiving. |
-| **Import/Export** | Built-in CSV importer, Bitly API v4 as the reference per-provider importer, CSV export via the API. |
+| **Import/Export** | Built-in CSV importer, Bitly API v4 as the reference per-provider importer, CSV export via `CsvLinkExporter`. |
 | **ClickHouse** | Alternative `VisitRepository` driver over ClickHouse's native HTTP interface — same contract, no client library dependency. |
 | **Multi-tenancy** | Fully feature-flagged. Auto-scoped via `stancl/tenancy` when installed, or a manual config override. Configurable plan limits (`links_per_month`, `domains`, `retention_days`). |
-| **Link-in-bio** | Public pages at `/bio/{handle}` with blocks (link, text, image, video) and per-block click tracking. |
 
-Recording a conversion always persists it locally, then optionally forwards it server-to-server based on `short-url.conversions.driver`:
-
-```bash
-curl -X POST https://your-app.test/api/short-url/v1/conversions \
-  -H "Authorization: Bearer {api-key}" \
-  -d '{"url_key": "promo25", "event_name": "purchase", "value": 49.90, "currency": "USD"}'
-```
-
-Global stats — a breakdown across every link a caller can see, not just one — power a dashboard's overview without the consumer computing any aggregation itself:
-
-```bash
-# All links, optionally narrowed to ?folder_id= or ?tag_id=, and ?from=/?to=
-curl https://your-app.test/api/short-url/v1/stats -H "Authorization: Bearer {api-key}"
-```
-
-Same `StatsAggregator` internally — `Contracts\StatsAggregator::forShortUrls(array $shortUrlIds)` is the programmatic equivalent, for anywhere that isn't the REST API (a Filament dashboard, a scheduled report). It only does the aggregation math; which links belong in the set is always resolved by the caller through `ShortUrl`'s own tenant-scoped query.
+`Contracts\StatsAggregator::forShortUrls(array $shortUrlIds)` builds a breakdown across a set of links — a dashboard overview, a scheduled report. It only does the aggregation math; which links belong in the set is always resolved by the caller through `ShortUrl`'s own tenant-scoped query.
 
 ## Configuration
 
 Every option is documented inline in `config/short-url.php`. Main groups:
 
-`table_prefix`, `route`, `key`, `redirect`, `cache`, `tracking` (includes `clickhouse`), `domains`, `branding`, `security` (password, warning, rate limit, VPN, safe browsing), `compliance`, `audit`, `api`, `webhooks`, `analytics`, `conversions`, `alerts`, `notifications`, `qr`, `deep_links`, `pixels`, `importers`, `tenancy`, `bio`.
+`table_prefix`, `route`, `key`, `redirect`, `cache`, `tracking` (includes `clickhouse`), `domains`, `branding`, `security` (password, warning, rate limit, VPN, safe browsing), `compliance`, `audit`, `analytics`, `conversions`, `alerts`, `notifications`, `pixels`, `importers`, `tenancy`.
 
 Settings can also be read/written at runtime via `Contracts\SettingsRepository`, with a declarative schema (`schema()`) for building dynamic forms in the UI plugin.
 
@@ -186,7 +169,6 @@ All self-register with the scheduler (`packageBooted()`), respecting their confi
 | `short-url:check-safe-browsing` | daily |
 | `short-url:detect-anomalies` | hourly |
 | `short-url:send-scheduled-reports` | daily |
-| `short-url:prune-webhook-deliveries` | weekly |
 | `short-url:import {driver} {source}` | manual |
 
 `aggregate-and-prune` prunes each tenant's visit rows against its own plan `retention_days` when multi-tenancy is enabled, falling back to the package-wide `short-url.tracking.retention_days` otherwise.
@@ -208,12 +190,12 @@ $shortUrl->fullUrl(): string // ready-to-share link (custom domain or app host)
 
 // src/Contracts/
 VisitRepository, GeoIpDriver, VpnDetectionDriver, AnalyticsDriver,
-SafeBrowsingChecker, QrCodeBuilder, StatsAggregator, TargetingResolver,
-DnsVerifier, SettingsRepository, WebhookDispatcher, ImporterDriver,
+SafeBrowsingChecker, StatsAggregator, TargetingResolver,
+DnsVerifier, SettingsRepository, ImporterDriver,
 ConversionApiDispatcher
 
 // src/Registries/
-FilterTypeRegistry, AnalyticsDriverRegistry, DeepLinkRegistry,
+FilterTypeRegistry, AnalyticsDriverRegistry,
 PixelProviderRegistry, ImporterDriverRegistry
 ```
 

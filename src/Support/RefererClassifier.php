@@ -18,12 +18,8 @@ class RefererClassifier
         'mail.google.com', 'outlook.', 'outlook.live.com', 'mail.yahoo.com',
     ];
 
-    public static function classify(?string $refererUrl, string $appHost, bool $isQrScan = false): string
+    public static function classify(?string $refererUrl, string $appHost): string
     {
-        if ($isQrScan) {
-            return 'qr';
-        }
-
         if (blank($refererUrl)) {
             return 'direct';
         }

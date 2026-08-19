@@ -9,7 +9,6 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\GeoIpDriver;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\VisitRepository;
-use JeffersonGoncalves\LaravelShortUrl\Contracts\WebhookDispatcher;
 use JeffersonGoncalves\LaravelShortUrl\Data\GeoLocation;
 use JeffersonGoncalves\LaravelShortUrl\Events\ShortUrlVisited;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
@@ -31,7 +30,7 @@ use Throwable;
  *     short_url_id: int, tenant_id: int|null, ip: string, user_agent: string,
  *     referer_url: string|null, browser_language: string|null, app_host: string,
  *     is_bot: bool, device_type: string|null, operating_system: string|null,
- *     is_qr_scan: bool, is_vpn: bool, is_proxy: bool, is_tor: bool, is_datacenter: bool,
+ *     is_vpn: bool, is_proxy: bool, is_tor: bool, is_datacenter: bool,
  *     utm_source: string|null, utm_medium: string|null,
  *     utm_campaign: string|null, utm_term: string|null, utm_content: string|null,
  *     selected_variant: string|null, matched_rule_index: int|null,
@@ -101,7 +100,6 @@ class TrackShortUrlVisitJob implements ShouldQueue
             'utm_campaign' => $payload['utm_campaign'],
             'utm_term' => $payload['utm_term'],
             'utm_content' => $payload['utm_content'],
-            'is_qr_scan' => $payload['is_qr_scan'],
             'is_bot' => $isBot,
             'is_vpn' => $payload['is_vpn'],
             'is_proxy' => $payload['is_proxy'],
@@ -118,7 +116,6 @@ class TrackShortUrlVisitJob implements ShouldQueue
         $counters->increment($payload['short_url_id'], [
             'total_visits' => $isBot ? 0 : 1,
             'unique_visits' => $isUnique ? 1 : 0,
-            'qr_scans' => $payload['is_qr_scan'] ? 1 : 0,
             'bot_visits' => $isBot ? 1 : 0,
         ]);
 
@@ -133,14 +130,6 @@ class TrackShortUrlVisitJob implements ShouldQueue
             ShortUrlVisited::dispatch($shortUrl, $visit);
 
             if (! $isBot) {
-                app(WebhookDispatcher::class)->dispatch('link.visited', [
-                    'short_url_id' => $shortUrl->id,
-                    'url_key' => $shortUrl->url_key,
-                    'country_code' => $attributes['country_code'] ?? null,
-                    'device_type' => $attributes['device_type'] ?? null,
-                    'referer_type' => $attributes['referer_type'] ?? null,
-                ], $shortUrl);
-
                 $this->forwardToAnalyticsDrivers(array_merge($attributes, ['url_key' => $shortUrl->url_key]));
             }
         }
@@ -209,7 +198,7 @@ class TrackShortUrlVisitJob implements ShouldQueue
         return [
             'referer_url' => $payload['referer_url'],
             'referer_host' => $payload['referer_url'] ? parse_url($payload['referer_url'], PHP_URL_HOST) : null,
-            'referer_type' => RefererClassifier::classify($payload['referer_url'], $payload['app_host'], $payload['is_qr_scan']),
+            'referer_type' => RefererClassifier::classify($payload['referer_url'], $payload['app_host']),
         ];
     }
 

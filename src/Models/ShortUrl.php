@@ -35,7 +35,6 @@ use JeffersonGoncalves\LaravelShortUrl\Tenancy\BelongsToTenant;
  * @property int|null $max_visits
  * @property int $total_visits
  * @property int $unique_visits
- * @property int $qr_scans
  * @property int $bot_visits
  * @property Carbon|null $activated_at
  * @property Carbon|null $expires_at
@@ -45,12 +44,8 @@ use JeffersonGoncalves\LaravelShortUrl\Tenancy\BelongsToTenant;
  * @property string|null $password_hint
  * @property bool $show_warning_page
  * @property string|null $warning_message
- * @property bool $auto_open_app_mobile
- * @property string|null $app_scheme_override
  * @property string|null $ga_tracking_id
  * @property string|null $ga_api_secret_override
- * @property string|null $webhook_url
- * @property string|null $webhook_secret
  * @property array<string, mixed>|null $targeting_rules
  * @property array<string, mixed>|null $rotation_variants
  * @property array<string, mixed>|null $geo_fence
@@ -62,7 +57,6 @@ use JeffersonGoncalves\LaravelShortUrl\Tenancy\BelongsToTenant;
  * @property string|null $og_title
  * @property string|null $og_description
  * @property string|null $og_image_path
- * @property array<string, mixed>|null $qr_design
  * @property string|null $safe_browsing_status
  * @property Carbon|null $safe_browsing_checked_at
  * @property bool $track_visits
@@ -97,7 +91,6 @@ class ShortUrl extends Model
             'forward_query_params' => 'boolean',
             'strip_utm_from_destination' => 'boolean',
             'show_warning_page' => 'boolean',
-            'auto_open_app_mobile' => 'boolean',
             'track_visits' => 'boolean',
             'track_ip_address' => 'boolean',
             'track_browser' => 'boolean',
@@ -111,7 +104,6 @@ class ShortUrl extends Model
             'max_visits' => 'integer',
             'total_visits' => 'integer',
             'unique_visits' => 'integer',
-            'qr_scans' => 'integer',
             'bot_visits' => 'integer',
             'activated_at' => 'datetime',
             'expires_at' => 'datetime',
@@ -122,7 +114,6 @@ class ShortUrl extends Model
             'targeting_rules' => 'array',
             'rotation_variants' => 'array',
             'geo_fence' => 'array',
-            'qr_design' => 'array',
         ];
     }
 

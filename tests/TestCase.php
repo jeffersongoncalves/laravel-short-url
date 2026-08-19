@@ -72,9 +72,9 @@ abstract class TestCase extends Orchestra
         }
 
         // Numeric prefixes reproduce LaravelShortUrlServiceProvider::MIGRATIONS
-        // order (e.g. bio_pages before bio_links, an FK dependency) — plain
-        // stub filenames would sort alphabetically instead and break on any
-        // database that enforces foreign keys strictly (MySQL, Postgres).
+        // order — plain stub filenames would sort alphabetically instead and
+        // break on any database that enforces foreign keys strictly (MySQL,
+        // Postgres) if a dependent table sorted before what it references.
         foreach (LaravelShortUrlServiceProvider::MIGRATIONS as $index => $migration) {
             $stub = $stubsPath.'/'.$migration.'.php.stub';
             $prefix = str_pad((string) $index, 4, '0', STR_PAD_LEFT);

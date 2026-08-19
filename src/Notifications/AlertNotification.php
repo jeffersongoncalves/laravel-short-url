@@ -8,18 +8,13 @@ use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use JeffersonGoncalves\LaravelShortUrl\Models\Alert;
-use JeffersonGoncalves\LaravelShortUrl\Notifications\Channels\DiscordWebhookChannel;
-use JeffersonGoncalves\LaravelShortUrl\Notifications\Channels\SlackWebhookChannel;
-use JeffersonGoncalves\LaravelShortUrl\Notifications\Channels\TeamsWebhookChannel;
 use JeffersonGoncalves\LaravelShortUrl\Notifications\Channels\TelegramChannel;
 
 /**
  * Channels are selected from config rather than per-notifiable routing —
  * this package has no user model of its own, so "who gets notified" is an
  * operator-level setting (short-url.notifications.*), not a per-user
- * preference. WhatsApp is intentionally not covered here: it needs a
- * provider account (Twilio/Meta) and templated messages, not just a
- * webhook URL — wire it the same way via a custom channel if needed.
+ * preference.
  */
 class AlertNotification extends Notification implements ShouldQueue
 {
@@ -46,20 +41,8 @@ class AlertNotification extends Notification implements ShouldQueue
             $channels[] = 'broadcast';
         }
 
-        if (config('short-url.notifications.slack_webhook_url')) {
-            $channels[] = SlackWebhookChannel::class;
-        }
-
-        if (config('short-url.notifications.discord_webhook_url')) {
-            $channels[] = DiscordWebhookChannel::class;
-        }
-
         if (config('short-url.notifications.telegram_bot_token') && config('short-url.notifications.telegram_chat_id')) {
             $channels[] = TelegramChannel::class;
-        }
-
-        if (config('short-url.notifications.teams_webhook_url')) {
-            $channels[] = TeamsWebhookChannel::class;
         }
 
         return $channels;
@@ -77,22 +60,7 @@ class AlertNotification extends Notification implements ShouldQueue
         return new BroadcastMessage($this->toArray($notifiable));
     }
 
-    public function toSlack(mixed $notifiable): string
-    {
-        return "🔔 {$this->alert->message}";
-    }
-
-    public function toDiscord(mixed $notifiable): string
-    {
-        return $this->alert->message;
-    }
-
     public function toTelegram(mixed $notifiable): string
-    {
-        return $this->alert->message;
-    }
-
-    public function toTeams(mixed $notifiable): string
     {
         return $this->alert->message;
     }

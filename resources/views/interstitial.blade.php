@@ -40,7 +40,6 @@
 
     <script>
         var destinationUrl = @json($destinationUrl, JSON_UNESCAPED_SLASHES);
-        var schemeUrl = @json($schemeUrl, JSON_UNESCAPED_SLASHES);
         var pixelScripts = @json($pixelScripts, JSON_UNESCAPED_SLASHES);
 
         function shortUrlRun(withPixels) {
@@ -48,10 +47,6 @@
                 pixelScripts.forEach(function (script) {
                     try { (new Function(script))(); } catch (e) {}
                 });
-            }
-
-            if (schemeUrl) {
-                window.location.href = schemeUrl;
             }
 
             window.location.replace(destinationUrl);

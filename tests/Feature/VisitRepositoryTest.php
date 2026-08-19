@@ -16,7 +16,6 @@ function makeVisit(ShortUrl $shortUrl, array $overrides = []): void
         'referer_host' => 'google.com',
         'referer_type' => 'search',
         'is_bot' => false,
-        'is_qr_scan' => false,
         'ip_hash' => bin2hex(random_bytes(8)),
         'created_at' => now(),
     ], $overrides));

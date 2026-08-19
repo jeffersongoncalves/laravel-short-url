@@ -90,7 +90,6 @@ class EloquentStatsAggregator implements StatsAggregator
         return new StatsPayload(
             totalVisits: $totals['visits_count'],
             uniqueVisits: $totals['unique_visits_count'],
-            qrVisits: $totals['qr_visits_count'],
             botVisits: $totals['bot_visits_count'],
             deviceStats: $totals['device_stats'],
             browserStats: $totals['browser_stats'],
@@ -129,7 +128,6 @@ class EloquentStatsAggregator implements StatsAggregator
             $this->merge($totals, [
                 'visits_count' => $row->visits_count,
                 'unique_visits_count' => $row->unique_visits_count,
-                'qr_visits_count' => $row->qr_visits_count,
                 'bot_visits_count' => $row->bot_visits_count,
                 'device_stats' => json_decode((string) $row->device_stats, true) ?? [],
                 'browser_stats' => json_decode((string) $row->browser_stats, true) ?? [],
@@ -154,7 +152,7 @@ class EloquentStatsAggregator implements StatsAggregator
      */
     protected function merge(array &$totals, array $addition): void
     {
-        foreach (['visits_count', 'unique_visits_count', 'qr_visits_count', 'bot_visits_count'] as $key) {
+        foreach (['visits_count', 'unique_visits_count', 'bot_visits_count'] as $key) {
             $totals[$key] += (int) ($addition[$key] ?? 0);
         }
 
@@ -211,7 +209,6 @@ class EloquentStatsAggregator implements StatsAggregator
         return [
             'visits_count' => 0,
             'unique_visits_count' => 0,
-            'qr_visits_count' => 0,
             'bot_visits_count' => 0,
             'device_stats' => [],
             'browser_stats' => [],

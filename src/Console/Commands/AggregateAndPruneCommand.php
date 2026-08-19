@@ -49,7 +49,6 @@ class AggregateAndPruneCommand extends Command
                 [
                     'visits_count' => $stats['visits_count'],
                     'unique_visits_count' => $stats['unique_visits_count'],
-                    'qr_visits_count' => $stats['qr_visits_count'],
                     'bot_visits_count' => $stats['bot_visits_count'],
                     'device_stats' => json_encode($stats['device_stats']),
                     'browser_stats' => json_encode($stats['browser_stats']),

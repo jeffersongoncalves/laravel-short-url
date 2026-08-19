@@ -23,7 +23,6 @@ readonly class StatsPayload
     public function __construct(
         public int $totalVisits = 0,
         public int $uniqueVisits = 0,
-        public int $qrVisits = 0,
         public int $botVisits = 0,
         public array $deviceStats = [],
         public array $browserStats = [],

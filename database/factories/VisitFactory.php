@@ -21,7 +21,6 @@ class VisitFactory extends Factory
             'ip_hash' => bin2hex(random_bytes(8)),
             'country_code' => fake()->countryCode(),
             'device_type' => fake()->randomElement(['desktop', 'mobile', 'tablet']),
-            'is_qr_scan' => false,
             'is_bot' => false,
             'is_vpn' => false,
             'is_proxy' => false,

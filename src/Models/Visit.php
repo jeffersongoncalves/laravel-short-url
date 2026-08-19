@@ -40,7 +40,6 @@ use JeffersonGoncalves\LaravelShortUrl\Database\Factories\VisitFactory;
  * @property string|null $utm_campaign
  * @property string|null $utm_term
  * @property string|null $utm_content
- * @property bool $is_qr_scan
  * @property bool $is_bot
  * @property bool $is_vpn
  * @property bool $is_proxy
@@ -67,7 +66,6 @@ class Visit extends Model
             'ip_version' => 'integer',
             'latitude' => 'float',
             'longitude' => 'float',
-            'is_qr_scan' => 'boolean',
             'is_bot' => 'boolean',
             'is_vpn' => 'boolean',
             'is_proxy' => 'boolean',
