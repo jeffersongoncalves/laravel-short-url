@@ -2,7 +2,9 @@
 
 namespace JeffersonGoncalves\LaravelShortUrl\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use JeffersonGoncalves\LaravelShortUrl\Database\Factories\WebhookDeliveryFactory;
 
 /**
  * @property int $id
@@ -16,6 +18,9 @@ use Illuminate\Database\Eloquent\Model;
  */
 class WebhookDelivery extends Model
 {
+    /** @use HasFactory<WebhookDeliveryFactory> */
+    use HasFactory;
+
     public const UPDATED_AT = null;
 
     protected $guarded = ['id'];
@@ -32,5 +37,10 @@ class WebhookDelivery extends Model
     public function getTable(): string
     {
         return config('short-url.table_prefix', 'short_url_').'webhook_deliveries';
+    }
+
+    protected static function newFactory(): WebhookDeliveryFactory
+    {
+        return WebhookDeliveryFactory::new();
     }
 }

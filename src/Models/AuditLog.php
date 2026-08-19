@@ -2,7 +2,9 @@
 
 namespace JeffersonGoncalves\LaravelShortUrl\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use JeffersonGoncalves\LaravelShortUrl\Database\Factories\AuditLogFactory;
 
 /**
  * @property int $id
@@ -14,6 +16,9 @@ use Illuminate\Database\Eloquent\Model;
  */
 class AuditLog extends Model
 {
+    /** @use HasFactory<AuditLogFactory> */
+    use HasFactory;
+
     public const UPDATED_AT = null;
 
     protected $guarded = ['id'];
@@ -29,5 +34,10 @@ class AuditLog extends Model
     public function getTable(): string
     {
         return config('short-url.table_prefix', 'short_url_').'audit_logs';
+    }
+
+    protected static function newFactory(): AuditLogFactory
+    {
+        return AuditLogFactory::new();
     }
 }

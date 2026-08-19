@@ -2,8 +2,10 @@
 
 namespace JeffersonGoncalves\LaravelShortUrl\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use JeffersonGoncalves\LaravelShortUrl\Database\Factories\ConversionFactory;
 
 /**
  * @property int $id
@@ -18,6 +20,9 @@ use Illuminate\Support\Carbon;
  */
 class Conversion extends Model
 {
+    /** @use HasFactory<ConversionFactory> */
+    use HasFactory;
+
     public const UPDATED_AT = null;
 
     protected $guarded = ['id'];
@@ -34,5 +39,10 @@ class Conversion extends Model
     public function getTable(): string
     {
         return config('short-url.table_prefix', 'short_url_').'conversions';
+    }
+
+    protected static function newFactory(): ConversionFactory
+    {
+        return ConversionFactory::new();
     }
 }

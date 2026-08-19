@@ -2,7 +2,9 @@
 
 namespace JeffersonGoncalves\LaravelShortUrl\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use JeffersonGoncalves\LaravelShortUrl\Database\Factories\AlertFactory;
 
 /**
  * @property int $id
@@ -14,6 +16,9 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Alert extends Model
 {
+    /** @use HasFactory<AlertFactory> */
+    use HasFactory;
+
     public const UPDATED_AT = null;
 
     protected $guarded = ['id'];
@@ -30,5 +35,10 @@ class Alert extends Model
     public function getTable(): string
     {
         return config('short-url.table_prefix', 'short_url_').'alerts';
+    }
+
+    protected static function newFactory(): AlertFactory
+    {
+        return AlertFactory::new();
     }
 }

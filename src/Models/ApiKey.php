@@ -2,9 +2,11 @@
 
 namespace JeffersonGoncalves\LaravelShortUrl\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use JeffersonGoncalves\LaravelShortUrl\Database\Factories\ApiKeyFactory;
 use JeffersonGoncalves\LaravelShortUrl\Tenancy\BelongsToTenant;
 
 /**
@@ -20,7 +22,8 @@ use JeffersonGoncalves\LaravelShortUrl\Tenancy\BelongsToTenant;
  */
 class ApiKey extends Model
 {
-    use BelongsToTenant;
+    /** @use HasFactory<ApiKeyFactory> */
+    use BelongsToTenant, HasFactory;
 
     protected $guarded = ['id'];
 
@@ -39,6 +42,11 @@ class ApiKey extends Model
     public function getTable(): string
     {
         return config('short-url.table_prefix', 'short_url_').'api_keys';
+    }
+
+    protected static function newFactory(): ApiKeyFactory
+    {
+        return ApiKeyFactory::new();
     }
 
     /**

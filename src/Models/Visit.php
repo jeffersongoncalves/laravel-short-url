@@ -2,9 +2,11 @@
 
 namespace JeffersonGoncalves\LaravelShortUrl\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use JeffersonGoncalves\LaravelShortUrl\Database\Factories\VisitFactory;
 
 /**
  * @property int $id
@@ -51,6 +53,9 @@ use Illuminate\Support\Carbon;
  */
 class Visit extends Model
 {
+    /** @use HasFactory<VisitFactory> */
+    use HasFactory;
+
     public const UPDATED_AT = null;
 
     protected $guarded = ['id'];
@@ -76,6 +81,11 @@ class Visit extends Model
     public function getTable(): string
     {
         return config('short-url.table_prefix', 'short_url_').'visits';
+    }
+
+    protected static function newFactory(): VisitFactory
+    {
+        return VisitFactory::new();
     }
 
     /**
