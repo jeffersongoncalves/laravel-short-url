@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.0.0](https://github.com/jeffersongoncalves/laravel-short-url/compare/v1.3.0...v2.0.0) - 2026-08-19
+
+### Breaking changes
+
+Removes the following features entirely:
+
+- **QR codes** — `QrCodeController`, `QrCodeBuilder` contract, Endroid driver, `qr_scans`/`qr_design` columns, `?source=qr` scan tracking, `GET /{urlKey}/qr` route.
+- **API keys & REST API** — `ApiKey` model, `ApiKeyAuth` middleware, and the entire `/api/short-url/v1` REST API (links, stats, domains, visits, conversions, webhooks, export).
+- **Bio pages / Bio links** — `BioPage`/`BioLink` models, `BioPageController`, `/bio/{handle}` routes, link-in-bio config.
+- **Webhooks** — `Webhook`/`WebhookDelivery` models, `WebhookDispatcher` contract, `EloquentWebhookDispatcher`, `SendWebhookJob`, `PruneWebhookDeliveriesCommand`, `webhook_url`/`webhook_secret` columns, and the alert notification Slack/Discord/Teams webhook channels.
+- **Deep links** — `DeepLinkRegistry`, `AppDefinition`, AASA/assetlinks controllers and routes, `auto_open_app_mobile`/`app_scheme_override` columns.
+
+Consumers relying on any of the above must stay on the 1.x branch. Everything else (redirect pipeline, analytics, targeting, custom domains, conversions, multi-tenancy, pixels, alerts) is unchanged.
+
+Migration stubs, config keys (`api`, `webhooks`, `qr`, `deep_links`, `bio`), and console commands tied to the removed features are gone — republish `short-url-config`/`short-url-migrations` after upgrading.
+
 ## [v1.3.0](https://github.com/jeffersongoncalves/laravel-short-url/compare/v1.2.1...v1.3.0) - 2026-08-19
 
 Factories for every model, not just the 9 that already had one.
