@@ -33,8 +33,13 @@ return [
 
         // When true, the redirect route is registered as the application's
         // fallback route instead of an explicit `/{urlKey}` route, so host
-        // app routes always take precedence over short URL keys.
-        'fallback' => env('SHORT_URL_ROUTE_FALLBACK', false),
+        // app routes always take precedence over short URL keys. Defaults to
+        // true: a root-level `/{urlKey}` registered as an explicit route
+        // would otherwise shadow every single-segment route the host app
+        // defines (see GH issue #2). Safe to disable when `prefix` is set,
+        // since a prefixed route (e.g. `/l/{urlKey}`) cannot collide with
+        // app routes.
+        'fallback' => env('SHORT_URL_ROUTE_FALLBACK', true),
     ],
 
     /*

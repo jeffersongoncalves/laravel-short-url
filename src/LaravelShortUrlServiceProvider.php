@@ -92,7 +92,6 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
             ->hasMigrations(static::MIGRATIONS)
             ->hasTranslations()
             ->hasViews()
-            ->hasRoutes(['web'])
             ->hasCommands([
                 SyncCountersCommand::class,
                 AggregateAndPruneCommand::class,
@@ -172,6 +171,12 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
         $importers = $this->app->make(ImporterDriverRegistry::class);
         $importers->extend('csv', fn () => $this->app->make(CsvImporterDriver::class));
         $importers->extend('bitly', fn () => $this->app->make(BitlyImporterDriver::class));
+
+        // Registered after every provider (app included) has booted, so the
+        // redirect route always sits last in the route collection and never
+        // shadows a host app route (GH issue #2) — even if `route.fallback`
+        // is turned off manually.
+        $this->app->booted(fn () => $this->loadRoutesFrom(__DIR__.'/../routes/web.php'));
 
         $this->app->booted(function (): void {
             $schedule = $this->app->make(Schedule::class);
