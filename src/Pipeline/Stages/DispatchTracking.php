@@ -3,6 +3,7 @@
 namespace JeffersonGoncalves\LaravelShortUrl\Pipeline\Stages;
 
 use Closure;
+use JeffersonGoncalves\LaravelShortUrl\GeoIp\HeadersGeoIpDriver;
 use JeffersonGoncalves\LaravelShortUrl\Jobs\TrackShortUrlVisitJob;
 use JeffersonGoncalves\LaravelShortUrl\Pipeline\RedirectContext;
 use JeffersonGoncalves\LaravelShortUrl\Support\AcceptLanguage;
@@ -43,6 +44,9 @@ class DispatchTracking
             'short_url_id' => $shortUrl->id,
             'tenant_id' => $shortUrl->tenant_id,
             'ip' => (string) $request->ip(),
+            // Snapshotted here because TrackShortUrlVisitJob normally runs
+            // in a queue worker, where this request no longer exists (#3).
+            'geo_headers' => HeadersGeoIpDriver::snapshot($request),
             'user_agent' => (string) $request->userAgent(),
             'referer_url' => $request->headers->get('referer'),
             'browser_language' => AcceptLanguage::preferred($request->headers->get('accept-language')),

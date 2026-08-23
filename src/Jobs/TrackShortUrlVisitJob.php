@@ -11,6 +11,7 @@ use JeffersonGoncalves\LaravelShortUrl\Contracts\GeoIpDriver;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\VisitRepository;
 use JeffersonGoncalves\LaravelShortUrl\Data\GeoLocation;
 use JeffersonGoncalves\LaravelShortUrl\Events\ShortUrlVisited;
+use JeffersonGoncalves\LaravelShortUrl\GeoIp\HeadersGeoIpDriver;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 use JeffersonGoncalves\LaravelShortUrl\Models\Visit;
 use JeffersonGoncalves\LaravelShortUrl\Registries\AnalyticsDriverRegistry;
@@ -27,7 +28,8 @@ use Throwable;
  * never surface past this job, so the whole thing is one error boundary.
  *
  * @phpstan-type Payload array{
- *     short_url_id: int, tenant_id: int|null, ip: string, user_agent: string,
+ *     short_url_id: int, tenant_id: int|null, ip: string,
+ *     geo_headers: array<string, string|null>, user_agent: string,
  *     referer_url: string|null, browser_language: string|null, app_host: string,
  *     is_bot: bool, device_type: string|null, operating_system: string|null,
  *     is_vpn: bool, is_proxy: bool, is_tor: bool, is_datacenter: bool,
@@ -68,7 +70,7 @@ class TrackShortUrlVisitJob implements ShouldQueue
         $isBot = $payload['is_bot'];
 
         $ipAttributes = $this->ipAttributes($payload);
-        $geo = $payload['track_ip_address'] && $ip !== '' ? $this->resolveGeo($geoIp, $ip) : new GeoLocation;
+        $geo = $payload['track_ip_address'] && $ip !== '' ? $this->resolveGeo($geoIp, $ip, $payload['geo_headers']) : new GeoLocation;
         $ua = $this->userAgentAttributes($payload);
         $referer = $this->refererAttributes($payload);
 
@@ -202,10 +204,17 @@ class TrackShortUrlVisitJob implements ShouldQueue
         ];
     }
 
-    protected function resolveGeo(GeoIpDriver $geoIp, string $ip): GeoLocation
+    /**
+     * @param  array<string, string|null>  $geoHeaders
+     */
+    protected function resolveGeo(GeoIpDriver $geoIp, string $ip, array $geoHeaders): GeoLocation
     {
         try {
-            return $geoIp->resolve($ip);
+            // HeadersGeoIpDriver needs the header snapshot instead of the
+            // (nonexistent, on a worker) live request — see class docblock.
+            return $geoIp instanceof HeadersGeoIpDriver
+                ? $geoIp->resolveFromHeaders($geoHeaders)
+                : $geoIp->resolve($ip);
         } catch (Throwable $e) {
             report($e);
 
