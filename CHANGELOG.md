@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.0.0](https://github.com/jeffersongoncalves/laravel-short-url/compare/v2.0.0...v3.0.0) - 2026-08-23
+
+### Breaking Changes
+
+- `route.fallback` now defaults to `true`. Previously the package registered an explicit `GET /{urlKey}` route at the application root during boot — **before** the host app's own routes loaded — so any single-segment app route (`/about`, `/projects`, ...) was silently shadowed and 404'd (#2).
+- The redirect route is now loaded from an `app()->booted()` callback, so it always registers after every other provider's routes, even if `fallback` is turned off manually.
+
+#### Upgrading
+
+If you rely on the old explicit-route behavior (e.g. you know for certain no app route can collide), set:
+
+```env
+SHORT_URL_ROUTE_FALLBACK=false
+
+```
+Otherwise no action needed — the new default just prevents the collision.
+
+Fixes #2
+
 ## [v2.0.0](https://github.com/jeffersongoncalves/laravel-short-url/compare/v1.3.0...v2.0.0) - 2026-08-19
 
 ### Breaking changes
