@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.1.0](https://github.com/jeffersongoncalves/laravel-short-url/compare/v3.0.0...v3.1.0) - 2026-08-23
+
+### Fixed
+
+- `HeadersGeoIpDriver` (the default GeoIP driver) resolved geo from the live HTTP request, but `TrackShortUrlVisitJob` runs in a queue worker where that request no longer exists — every queued visit was stored with empty geo. Only `QUEUE_CONNECTION=sync` happened to work. The CDN headers are now snapshotted during the request (alongside the other request-scoped tracking fields) and carried through the job payload (#3).
+- `tracking.trust_cdn_headers` is now actually wired up. Previously the flag existed in config and in the driver's own docblock but nothing read it — CDN geo headers were trusted unconditionally, even with the flag off.
+
+#### Upgrading
+
+If you use the default `headers` GeoIP driver, set:
+
+```env
+SHORT_URL_TRUST_CDN_HEADERS=true
+
+```
+to keep getting geo data (only do this if your app is only reachable through the trusted edge/CDN injecting those headers).
+
+Fixes #3
+
 ## [v3.0.0](https://github.com/jeffersongoncalves/laravel-short-url/compare/v2.0.0...v3.0.0) - 2026-08-23
 
 ### Breaking Changes
@@ -18,6 +37,7 @@ If you rely on the old explicit-route behavior (e.g. you know for certain no app
 
 ```env
 SHORT_URL_ROUTE_FALLBACK=false
+
 
 ```
 Otherwise no action needed — the new default just prevents the collision.
