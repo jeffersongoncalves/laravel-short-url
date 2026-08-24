@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\DB;
+use JeffersonGoncalves\LaravelShortUrl\Contracts\PlanResolver;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 use JeffersonGoncalves\LaravelShortUrl\Models\Visit;
 
@@ -43,9 +44,16 @@ it('applies each tenant\'s plan retention_days when tenancy is enabled', functio
     config([
         'short-url.tracking.retention_days' => 400,
         'short-url.tenancy.enabled' => true,
-        'short-url.tenancy.plan_resolver' => fn ($tenantId) => $tenantId === 1 ? 'basic' : 'default',
         'short-url.tenancy.plans.basic.retention_days' => 30,
     ]);
+
+    app()->bind(PlanResolver::class, fn () => new class implements PlanResolver
+    {
+        public function resolve(int|string $tenantId): string
+        {
+            return $tenantId === 1 ? 'basic' : 'default';
+        }
+    });
 
     $shortUrl = ShortUrl::factory()->create();
 

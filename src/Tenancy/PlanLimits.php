@@ -2,6 +2,7 @@
 
 namespace JeffersonGoncalves\LaravelShortUrl\Tenancy;
 
+use JeffersonGoncalves\LaravelShortUrl\Contracts\PlanResolver;
 use JeffersonGoncalves\LaravelShortUrl\Exceptions\PlanLimitExceeded;
 use JeffersonGoncalves\LaravelShortUrl\Models\CustomDomain;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
@@ -12,8 +13,8 @@ use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
  * current tenant has no plan configured (limit === null means unlimited).
  *
  * short-url.tenancy.plans is a map of plan name => limits; which plan the
- * current tenant is on comes from a host-supplied resolver Closure
- * (short-url.tenancy.plan_resolver), defaulting to the "default" plan.
+ * current tenant is on comes from a host-bound Contracts\PlanResolver,
+ * defaulting to the "default" plan when none is bound.
  */
 class PlanLimits
 {
@@ -76,10 +77,8 @@ class PlanLimits
 
     protected function planForTenant(int|string|null $tenantId): string
     {
-        $resolver = config('short-url.tenancy.plan_resolver');
-
-        if ($tenantId !== null && is_callable($resolver)) {
-            return (string) $resolver($tenantId);
+        if ($tenantId !== null && app()->bound(PlanResolver::class)) {
+            return app(PlanResolver::class)->resolve($tenantId);
         }
 
         return 'default';

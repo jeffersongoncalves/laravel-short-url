@@ -162,7 +162,7 @@ Off by default (`short-url.domains.enabled`) so a plain install never pays for t
 
 ## Multi-tenancy
 
-Entirely feature-flagged (`short-url.tenancy.enabled`), off by default and a complete no-op when off. When on, the tenant id resolves via `stancl/tenancy`'s `tenant()` helper if installed, otherwise `short-url.tenancy.current_tenant_id`. Per-plan limits (`links_per_month`, `domains`, `retention_days`) live in `short-url.tenancy.plans.*` and are resolved through `Tenancy\PlanLimits`; a plan is picked by a host-supplied `plan_resolver` Closure, defaulting to `"default"`. `short-url:aggregate-and-prune` applies each tenant's own `retention_days` when tenancy is enabled, falling back to the package-wide `short-url.tracking.retention_days` otherwise.
+Entirely feature-flagged (`short-url.tenancy.enabled`), off by default and a complete no-op when off. When on, the tenant id resolves via a bound `Contracts\TenantResolver` if the host app has one, else `stancl/tenancy`'s `tenant()` helper if installed, else `short-url.tenancy.current_tenant_id`. Per-plan limits (`links_per_month`, `domains`, `retention_days`) live in `short-url.tenancy.plans.*` and are resolved through `Tenancy\PlanLimits`; a plan is picked by a bound `Contracts\PlanResolver`, defaulting to `"default"` when none is bound. Both are container bindings, not config Closures, because `php artisan config:cache` can't serialize a Closure. `short-url:aggregate-and-prune` applies each tenant's own `retention_days` when tenancy is enabled, falling back to the package-wide `short-url.tracking.retention_days` otherwise.
 
 ## Events
 

@@ -1,5 +1,6 @@
 <?php
 
+use JeffersonGoncalves\LaravelShortUrl\Contracts\PlanResolver;
 use JeffersonGoncalves\LaravelShortUrl\Exceptions\PlanLimitExceeded;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 use JeffersonGoncalves\LaravelShortUrl\ShortUrlManager;
@@ -38,14 +39,21 @@ it('throws PlanLimitExceeded once the monthly link limit is reached', function (
         ->toThrow(PlanLimitExceeded::class);
 });
 
-it('resolves the plan via a configured plan_resolver closure', function () {
+it('resolves the plan via a bound PlanResolver', function () {
     config([
         'short-url.tenancy.enabled' => true,
         'short-url.tenancy.current_tenant_id' => 1,
-        'short-url.tenancy.plan_resolver' => fn ($tenantId) => 'pro',
         'short-url.tenancy.plans.pro.links_per_month' => null,
         'short-url.tenancy.plans.default.links_per_month' => 0,
     ]);
+
+    app()->bind(PlanResolver::class, fn () => new class implements PlanResolver
+    {
+        public function resolve(int|string $tenantId): string
+        {
+            return 'pro';
+        }
+    });
 
     expect(app(PlanLimits::class)->currentPlan())->toBe('pro');
 

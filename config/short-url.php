@@ -415,17 +415,21 @@ return [
     |   helper when installed, else current_tenant_id below.
     | - enforces the plan limits below on link/domain creation.
     |
-    | - current_tenant_id: manual override when not using stancl/tenancy
-    |   (e.g. host apps with their own tenancy, or tests).
-    | - plan_resolver: Closure(int|string $tenantId): string returning
-    |   which key of "plans" the tenant is on. Defaults to "default".
+    | To plug in tenancy without stancl/tenancy, bind Contracts\TenantResolver
+    | and (optionally) Contracts\PlanResolver in your own
+    | ServiceProvider::register() — see the README's "Multi-tenancy without
+    | stancl/tenancy" section. These are container bindings rather than
+    | config Closures because `php artisan config:cache` var_export()s this
+    | file and can't serialize a Closure.
+    |
+    | - current_tenant_id: static override for simpler cases (or tests)
+    |   that don't need a custom TenantResolver.
     | - plans.*.{links_per_month,domains}: null means unlimited.
     |
     */
     'tenancy' => [
         'enabled' => env('SHORT_URL_TENANCY_ENABLED', false),
         'current_tenant_id' => env('SHORT_URL_CURRENT_TENANT_ID'),
-        'plan_resolver' => null,
         'plans' => [
             'default' => [
                 'links_per_month' => null,

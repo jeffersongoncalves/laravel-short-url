@@ -145,7 +145,7 @@ Each stage can short-circuit by returning a `Response` directly (wrong password,
 | **Organization** | Hierarchical folders, tags, reusable UTM templates ("campaigns"), archiving. |
 | **Import/Export** | Built-in CSV importer, Bitly API v4 as the reference per-provider importer, CSV export via `CsvLinkExporter`. |
 | **ClickHouse** | Alternative `VisitRepository` driver over ClickHouse's native HTTP interface — same contract, no client library dependency. |
-| **Multi-tenancy** | Fully feature-flagged. Auto-scoped via `stancl/tenancy` when installed, or a manual config override. Configurable plan limits (`links_per_month`, `domains`, `retention_days`). |
+| **Multi-tenancy** | Fully feature-flagged. Auto-scoped via `stancl/tenancy` when installed, or a `Contracts\TenantResolver` binding for any other tenancy system. Configurable plan limits (`links_per_month`, `domains`, `retention_days`) via `Contracts\PlanResolver`. |
 
 `Contracts\StatsAggregator::forShortUrls(array $shortUrlIds)` builds a breakdown across a set of links — a dashboard overview, a scheduled report. It only does the aggregation math; which links belong in the set is always resolved by the caller through `ShortUrl`'s own tenant-scoped query.
 
@@ -156,6 +156,40 @@ Every option is documented inline in `config/short-url.php`. Main groups:
 `table_prefix`, `route`, `key`, `redirect`, `cache`, `tracking` (includes `clickhouse`), `domains`, `branding`, `security` (password, warning, rate limit, VPN, safe browsing), `compliance`, `audit`, `analytics`, `conversions`, `alerts`, `notifications`, `pixels`, `importers`, `tenancy`.
 
 Settings can also be read/written at runtime via `Contracts\SettingsRepository`, with a declarative schema (`schema()`) for building dynamic forms in the UI plugin.
+
+### Multi-tenancy without stancl/tenancy
+
+Every tenant-scoped model (`ShortUrl`, `CustomDomain`, `Folder`, `Tag`, `UtmTemplate`, and settings) resolves "the current tenant" through a single class, `Tenancy\TenantContext`. If you have your own tenancy — a custom global scope on your own tenant model, for example — bind `Contracts\TenantResolver` instead of installing stancl/tenancy:
+
+```php
+// App\Providers\AppServiceProvider
+
+use JeffersonGoncalves\LaravelShortUrl\Contracts\TenantResolver;
+
+public function register(): void
+{
+    $this->app->bind(TenantResolver::class, function () {
+        return new class implements TenantResolver
+        {
+            public function resolve(): int|string|null
+            {
+                return \App\Models\Tenant::current()?->id;
+            }
+        };
+    });
+}
+```
+
+```php
+// config/short-url.php
+'tenancy' => ['enabled' => true],
+```
+
+`TenantResolver` is checked before stancl/tenancy's `tenant()` helper and before the static `current_tenant_id` fallback. Once it returns your tenant id, scoping works exactly as it does with stancl.
+
+Plan limits (`links_per_month`, `domains`, `retention_days` via `tenancy.plans`) work the same way — bind `Contracts\PlanResolver` to say which plan key a given tenant id is on; with nothing bound, every tenant is on `plans.default`.
+
+Both are container bindings rather than config Closures because `php artisan config:cache` can't serialize a Closure — it would throw `LogicException: Your configuration files are not serializable.` on every deploy that runs it.
 
 ## Artisan commands
 
