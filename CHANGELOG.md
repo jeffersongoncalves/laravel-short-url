@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v4.0.0](https://github.com/jeffersongoncalves/laravel-short-url/compare/v3.1.0...v4.0.0) - 2026-08-23
+
+### Breaking Changes
+
+- `Contracts\TenantResolver` and `Contracts\PlanResolver` replace `short-url.tenancy.plan_resolver`. A plain config Closure can't survive `php artisan config:cache` — Laravel `var_export()`s the whole config array, which throws `LogicException: Your configuration files are not serializable.` on any Closure. Bindings live in code instead of cached config, so they're config:cache-safe.
+- `short-url.tenancy.plan_resolver` is no longer read. If you were using it, bind `Contracts\PlanResolver` instead (#5).
+
+#### Upgrading
+
+```php
+// App\Providers\AppServiceProvider
+
+use JeffersonGoncalves\LaravelShortUrl\Contracts\TenantResolver;
+use JeffersonGoncalves\LaravelShortUrl\Contracts\PlanResolver;
+
+public function register(): void
+{
+    // Resolve the current tenant without stancl/tenancy
+    $this->app->bind(TenantResolver::class, function () {
+        return new class implements TenantResolver {
+            public function resolve(): int|string|null
+            {
+                return \App\Models\Tenant::current()?->id;
+            }
+        };
+    });
+
+    // Only needed if you used to set tenancy.plan_resolver
+    $this->app->bind(PlanResolver::class, function () {
+        return new class implements PlanResolver {
+            public function resolve(int|string $tenantId): string
+            {
+                return \App\Models\Tenant::find($tenantId)?->plan ?? 'default';
+            }
+        };
+    });
+}
+
+```
+See the README's "Multi-tenancy without stancl/tenancy" section for the full walkthrough.
+
+Fixes #5
+
 ## [v3.1.0](https://github.com/jeffersongoncalves/laravel-short-url/compare/v3.0.0...v3.1.0) - 2026-08-23
 
 ### Fixed
@@ -18,6 +61,7 @@ If you use the default `headers` GeoIP driver, set:
 
 ```env
 SHORT_URL_TRUST_CDN_HEADERS=true
+
 
 ```
 to keep getting geo data (only do this if your app is only reachable through the trusted edge/CDN injecting those headers).
@@ -37,6 +81,7 @@ If you rely on the old explicit-route behavior (e.g. you know for certain no app
 
 ```env
 SHORT_URL_ROUTE_FALLBACK=false
+
 
 
 ```
