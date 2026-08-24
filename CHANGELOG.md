@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v4.1.0](https://github.com/jeffersongoncalves/laravel-short-url/compare/v4.0.0...v4.1.0) - 2026-08-24
+
+### Fixed
+
+- Postgres' `json` type has no equality operator, so any query that needs to deduplicate rows containing one of the package's JSON columns (`SELECT DISTINCT`, `GROUP BY`, `UNION`) failed with `SQLSTATE[42883]: could not identify an equality operator for type json`. Notably, filament-short-url's Pixels multi-select runs `SELECT DISTINCT` against `short_url_pixels`, so opening the Create/Edit Short URL form 500'd on Postgres.
+- Every `json()` column across the package's migration stubs is now `jsonb()`: `short_urls`, `short_url_pixels`, `short_url_settings`, `short_url_daily_stats`, `short_url_audit_logs`, `short_url_conversions`, `short_url_alerts`. `jsonb` has an equality operator, is indexable, and is Postgres' own recommended type over `json`. MySQL/SQLite map both the same way, so this is safe on all three supported drivers.
+
+#### Note for existing Postgres installs
+
+This only affects fresh installs (published migrations are copied into your app and owned by it from then on). If you already migrated on Postgres, alter the columns yourself, e.g.:
+
+```sql
+ALTER TABLE short_url_pixels ALTER COLUMN config TYPE jsonb USING config::jsonb;
+
+```
+Repeat per affected column/table above.
+
+Fixes #6
+
 ## [v4.0.0](https://github.com/jeffersongoncalves/laravel-short-url/compare/v3.1.0...v4.0.0) - 2026-08-23
 
 ### Breaking Changes
@@ -43,6 +62,7 @@ public function register(): void
     });
 }
 
+
 ```
 See the README's "Multi-tenancy without stancl/tenancy" section for the full walkthrough.
 
@@ -63,6 +83,7 @@ If you use the default `headers` GeoIP driver, set:
 SHORT_URL_TRUST_CDN_HEADERS=true
 
 
+
 ```
 to keep getting geo data (only do this if your app is only reachable through the trusted edge/CDN injecting those headers).
 
@@ -81,6 +102,7 @@ If you rely on the old explicit-route behavior (e.g. you know for certain no app
 
 ```env
 SHORT_URL_ROUTE_FALLBACK=false
+
 
 
 
