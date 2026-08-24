@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v4.2.0](https://github.com/jeffersongoncalves/laravel-short-url/compare/v4.1.0...v4.2.0) - 2026-08-24
+
+### Added
+
+- `Contracts\CustomDomainResolver`: host apps with their own domain->tenant mapping (multi-tenant SaaS with per-account custom domains) can now bind an implementation in their own `ServiceProvider::register()` instead of duplicating domain registration into `short_url_custom_domains`. `Pipeline\Stages\ResolveHost` calls it before the package's own `CustomDomain::forHost()` lookup, whenever `domains.enabled` is true. See the README's "Custom domain resolution without short_url_custom_domains" section.
+
+Closes #7
+
 ## [v4.1.0](https://github.com/jeffersongoncalves/laravel-short-url/compare/v4.0.0...v4.1.0) - 2026-08-24
 
 ### Fixed
@@ -18,6 +26,7 @@ This only affects fresh installs (published migrations are copied into your app 
 
 ```sql
 ALTER TABLE short_url_pixels ALTER COLUMN config TYPE jsonb USING config::jsonb;
+
 
 ```
 Repeat per affected column/table above.
@@ -63,6 +72,7 @@ public function register(): void
 }
 
 
+
 ```
 See the README's "Multi-tenancy without stancl/tenancy" section for the full walkthrough.
 
@@ -84,6 +94,7 @@ SHORT_URL_TRUST_CDN_HEADERS=true
 
 
 
+
 ```
 to keep getting geo data (only do this if your app is only reachable through the trusted edge/CDN injecting those headers).
 
@@ -102,6 +113,7 @@ If you rely on the old explicit-route behavior (e.g. you know for certain no app
 
 ```env
 SHORT_URL_ROUTE_FALLBACK=false
+
 
 
 
