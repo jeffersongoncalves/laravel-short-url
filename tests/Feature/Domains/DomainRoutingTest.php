@@ -2,6 +2,7 @@
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use JeffersonGoncalves\LaravelShortUrl\Contracts\CustomDomainResolver;
 use JeffersonGoncalves\LaravelShortUrl\Models\CustomDomain;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 use JeffersonGoncalves\LaravelShortUrl\Pipeline\RedirectContext;
@@ -69,6 +70,23 @@ it('redirects a custom domain root request when root_redirect_url is set', funct
 
     expect($response)->toBeInstanceOf(RedirectResponse::class)
         ->and($response->getTargetUrl())->toBe('https://example.com/landing');
+});
+
+it('resolves the custom domain through a bound CustomDomainResolver instead of the local table', function () {
+    ShortUrl::factory()->create(['url_key' => 'abc1234', 'custom_domain_id' => 99]);
+
+    app()->bind(CustomDomainResolver::class, fn () => new class implements CustomDomainResolver
+    {
+        public function resolve(string $host): ?CustomDomain
+        {
+            return $host === 'links.test' ? (new CustomDomain)->forceFill(['id' => 99]) : null;
+        }
+    });
+
+    $context = runHostAndResolve('links.test', 'abc1234');
+
+    expect($context->shortUrl)->not->toBeNull()
+        ->and($context->shortUrl->custom_domain_id)->toBe(99);
 });
 
 it('404s a custom domain root request with no root_redirect_url configured', function () {

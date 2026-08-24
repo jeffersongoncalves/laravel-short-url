@@ -164,6 +164,8 @@ Off by default (`short-url.domains.enabled`) so a plain install never pays for t
 
 Entirely feature-flagged (`short-url.tenancy.enabled`), off by default and a complete no-op when off. When on, the tenant id resolves via a bound `Contracts\TenantResolver` if the host app has one, else `stancl/tenancy`'s `tenant()` helper if installed, else `short-url.tenancy.current_tenant_id`. Per-plan limits (`links_per_month`, `domains`, `retention_days`) live in `short-url.tenancy.plans.*` and are resolved through `Tenancy\PlanLimits`; a plan is picked by a bound `Contracts\PlanResolver`, defaulting to `"default"` when none is bound. Both are container bindings, not config Closures, because `php artisan config:cache` can't serialize a Closure. `short-url:aggregate-and-prune` applies each tenant's own `retention_days` when tenancy is enabled, falling back to the package-wide `short-url.tracking.retention_days` otherwise.
 
+A host app with its own domain→tenant mapping can bind `Contracts\CustomDomainResolver` (`resolve(string $host): ?CustomDomain`) to skip `short_url_custom_domains` entirely — `Pipeline\Stages\ResolveHost` calls it instead of `CustomDomain::forHost()` when bound. The returned `CustomDomain` doesn't need to be persisted.
+
 ## Events
 
 | Event | Properties |
@@ -180,7 +182,7 @@ Every swappable piece is an interface under `src/Contracts/`, bound to a default
 VisitRepository, GeoIpDriver, VpnDetectionDriver, AnalyticsDriver,
 SafeBrowsingChecker, StatsAggregator, TargetingResolver,
 DnsVerifier, SettingsRepository, ImporterDriver,
-ConversionApiDispatcher
+ConversionApiDispatcher, TenantResolver, PlanResolver, CustomDomainResolver
 
 // Registries (extend() instead of rebind — multiple drivers coexist)
 FilterTypeRegistry, AnalyticsDriverRegistry,

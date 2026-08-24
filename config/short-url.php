@@ -172,6 +172,12 @@ return [
     | - max_verification_failures: consecutive failed DNS checks (via
     |   short-url:verify-domains) before a domain is auto-disabled.
     |
+    | Host apps with their own domain→tenant mapping can bind
+    | Contracts\CustomDomainResolver to resolve the host themselves instead
+    | of duplicating domain registration into short_url_custom_domains —
+    | see the README's "Custom domain resolution without
+    | short_url_custom_domains" section.
+    |
     */
     'domains' => [
         'enabled' => env('SHORT_URL_DOMAINS_ENABLED', false),

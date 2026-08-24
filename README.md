@@ -145,7 +145,7 @@ Each stage can short-circuit by returning a `Response` directly (wrong password,
 | **Organization** | Hierarchical folders, tags, reusable UTM templates ("campaigns"), archiving. |
 | **Import/Export** | Built-in CSV importer, Bitly API v4 as the reference per-provider importer, CSV export via `CsvLinkExporter`. |
 | **ClickHouse** | Alternative `VisitRepository` driver over ClickHouse's native HTTP interface — same contract, no client library dependency. |
-| **Multi-tenancy** | Fully feature-flagged. Auto-scoped via `stancl/tenancy` when installed, or a `Contracts\TenantResolver` binding for any other tenancy system. Configurable plan limits (`links_per_month`, `domains`, `retention_days`) via `Contracts\PlanResolver`. |
+| **Multi-tenancy** | Fully feature-flagged. Auto-scoped via `stancl/tenancy` when installed, or a `Contracts\TenantResolver` binding for any other tenancy system. Configurable plan limits (`links_per_month`, `domains`, `retention_days`) via `Contracts\PlanResolver`. Custom domain resolution pluggable via `Contracts\CustomDomainResolver` for apps with existing domain infra. |
 
 `Contracts\StatsAggregator::forShortUrls(array $shortUrlIds)` builds a breakdown across a set of links — a dashboard overview, a scheduled report. It only does the aggregation math; which links belong in the set is always resolved by the caller through `ShortUrl`'s own tenant-scoped query.
 
@@ -191,6 +191,42 @@ Plan limits (`links_per_month`, `domains`, `retention_days` via `tenancy.plans`)
 
 Both are container bindings rather than config Closures because `php artisan config:cache` can't serialize a Closure — it would throw `LogicException: Your configuration files are not serializable.` on every deploy that runs it.
 
+### Custom domain resolution without short_url_custom_domains
+
+If your app already maps hosts to tenants on its own (a multi-tenant SaaS with per-account custom domains, for example), bind `Contracts\CustomDomainResolver` instead of registering every domain in `short_url_custom_domains`:
+
+```php
+// App\Providers\AppServiceProvider
+
+use JeffersonGoncalves\LaravelShortUrl\Contracts\CustomDomainResolver;
+use JeffersonGoncalves\LaravelShortUrl\Models\CustomDomain;
+
+public function register(): void
+{
+    $this->app->bind(CustomDomainResolver::class, function () {
+        return new class implements CustomDomainResolver
+        {
+            public function resolve(string $host): ?CustomDomain
+            {
+                $account = \App\Models\Account::whereDomain($host)->first();
+
+                if (! $account) {
+                    return null;
+                }
+
+                return (new CustomDomain)->forceFill([
+                    'id' => $account->id,
+                    'tenant_id' => $account->id,
+                    'is_verified' => true,
+                ]);
+            }
+        };
+    });
+}
+```
+
+The returned `CustomDomain` doesn't need to be persisted — build a transient instance from your own domain data. When bound, `Pipeline\Stages\ResolveHost` calls it instead of its own `short_url_custom_domains` lookup, whenever `domains.enabled` is true.
+
 ## Artisan commands
 
 All self-register with the scheduler (`packageBooted()`), respecting their config toggles:
@@ -226,7 +262,7 @@ $shortUrl->fullUrl(): string // ready-to-share link (custom domain or app host)
 VisitRepository, GeoIpDriver, VpnDetectionDriver, AnalyticsDriver,
 SafeBrowsingChecker, StatsAggregator, TargetingResolver,
 DnsVerifier, SettingsRepository, ImporterDriver,
-ConversionApiDispatcher
+ConversionApiDispatcher, TenantResolver, PlanResolver, CustomDomainResolver
 
 // src/Registries/
 FilterTypeRegistry, AnalyticsDriverRegistry,
