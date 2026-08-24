@@ -16,7 +16,7 @@ return new class extends Migration
 
             $table->string('name');
             $table->string('provider_key');
-            $table->json('config');
+            $table->jsonb('config');
 
             $table->timestamps();
         });

@@ -19,19 +19,19 @@ return new class extends Migration
             $table->unsignedBigInteger('unique_visits_count')->default(0);
             $table->unsignedBigInteger('bot_visits_count')->default(0);
 
-            $table->json('device_stats')->nullable();
-            $table->json('browser_stats')->nullable();
-            $table->json('os_stats')->nullable();
-            $table->json('country_stats')->nullable();
-            $table->json('city_stats')->nullable();
-            $table->json('referer_stats')->nullable();
-            $table->json('referer_type_stats')->nullable();
-            $table->json('utm_source_stats')->nullable();
-            $table->json('utm_medium_stats')->nullable();
-            $table->json('utm_campaign_stats')->nullable();
-            $table->json('language_stats')->nullable();
-            $table->json('variant_stats')->nullable();
-            $table->json('hourly_stats')->nullable();
+            $table->jsonb('device_stats')->nullable();
+            $table->jsonb('browser_stats')->nullable();
+            $table->jsonb('os_stats')->nullable();
+            $table->jsonb('country_stats')->nullable();
+            $table->jsonb('city_stats')->nullable();
+            $table->jsonb('referer_stats')->nullable();
+            $table->jsonb('referer_type_stats')->nullable();
+            $table->jsonb('utm_source_stats')->nullable();
+            $table->jsonb('utm_medium_stats')->nullable();
+            $table->jsonb('utm_campaign_stats')->nullable();
+            $table->jsonb('language_stats')->nullable();
+            $table->jsonb('variant_stats')->nullable();
+            $table->jsonb('hourly_stats')->nullable();
 
             $table->timestamps();
 
