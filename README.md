@@ -83,6 +83,23 @@ These values are attached to the destination URL on redirect (see `strip_utm_fro
 
 Set `short-url.utm.required` (e.g. `['utm_medium']`) to make `ShortUrlManager` reject creating — or updating — a link that doesn't declare those fields, directly or via a template. Enforced everywhere a link is created (facade, builder, CSV/Bitly import).
 
+## QR codes
+
+Requires the optional `endroid/qr-code` package (^6.0):
+
+```bash
+composer require endroid/qr-code
+```
+
+```php
+$link->qrCode()->svg();                                // string
+$link->qrCode()->png();                                // string
+$link->qrCode(size: 400, margin: 20)->dataUri();        // data:image/png;base64,...
+$link->qrCode()->dataUri('svg');                        // data:image/svg+xml;base64,...
+```
+
+Encodes the link's `fullUrl()`. Without the package installed, each call throws `QrCodeGeneratorMissing` — never breaks link creation or redirects, only the QR call site itself.
+
 ## Destination types
 
 `destination_type` is one of `single`, `split`, or `rules`:
@@ -144,7 +161,7 @@ Each stage can short-circuit by returning a `Response` directly (wrong password,
 | **Pixels** | Retargeting pixels (Meta, Google Ads, TikTok, GA4) rendered on the interstitial, with an optional consent banner. |
 | **Organization** | Hierarchical folders, tags, reusable UTM templates ("campaigns"), archiving. |
 | **Import/Export** | Built-in CSV importer, Bitly API v4 as the reference per-provider importer, CSV export via `CsvLinkExporter`. |
-| **QR codes** | `$shortUrl->qrCode()->svg()`/`->png()`/`->dataUri()` via the optional `endroid/qr-code` package. Size/margin configurable via method args. |
+| **QR codes** | `$shortUrl->qrCode()->svg()`/`->png()`/`->dataUri()` via the optional `endroid/qr-code` (^6.0) package. Size/margin configurable via method args. |
 | **ClickHouse** | Alternative `VisitRepository` driver over ClickHouse's native HTTP interface — same contract, no client library dependency. |
 | **Multi-tenancy** | Fully feature-flagged. Auto-scoped via `stancl/tenancy` when installed, or a `Contracts\TenantResolver` binding for any other tenancy system. Configurable plan limits (`links_per_month`, `domains`, `retention_days`) via `Contracts\PlanResolver`. Custom domain resolution pluggable via `Contracts\CustomDomainResolver` for apps with existing domain infra. |
 
