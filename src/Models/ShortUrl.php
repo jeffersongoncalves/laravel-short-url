@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use JeffersonGoncalves\LaravelShortUrl\Database\Factories\ShortUrlFactory;
+use JeffersonGoncalves\LaravelShortUrl\Services\QrCodeGenerator;
 use JeffersonGoncalves\LaravelShortUrl\Tenancy\BelongsToTenant;
 
 /**
@@ -197,6 +198,16 @@ class ShortUrl extends Model
         $prefix = trim((string) config('short-url.route.prefix'), '/');
 
         return rtrim("{$scheme}://{$host}", '/').($prefix !== '' ? "/{$prefix}" : '').'/'.$this->url_key;
+    }
+
+    /**
+     * A QR code encoding this short url's full link — ->svg(), ->png() or
+     * ->dataUri() (see QrCodeGenerator). Requires the optional
+     * `endroid/qr-code` package.
+     */
+    public function qrCode(int $size = 300, int $margin = 10): QrCodeGenerator
+    {
+        return new QrCodeGenerator($this->fullUrl(), $size, $margin);
     }
 
     /**
