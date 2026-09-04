@@ -3,6 +3,7 @@
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use JeffersonGoncalves\LaravelShortUrl\Exceptions\QrCodeGeneratorMissing;
 use JeffersonGoncalves\LaravelShortUrl\Models\CustomDomain;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 
@@ -103,6 +104,19 @@ it('includes the configured route prefix in the full url', function () {
     $shortUrl = ShortUrl::factory()->create(['url_key' => 'aB3xK9']);
 
     expect($shortUrl->fullUrl())->toBe('https://short.test/go/aB3xK9');
+});
+
+it('builds a QrCodeGenerator for the full url', function () {
+    config(['short-url.route.prefix' => '']);
+
+    $shortUrl = ShortUrl::factory()->create(['url_key' => 'aB3xK9']);
+
+    // endroid/qr-code is an optional package (composer.json "suggest") not
+    // installed in this test suite — asserting the missing-package
+    // exception here is a proxy for "was fed the right url", since actually
+    // rendering the code needs the real package.
+    expect(fn () => $shortUrl->qrCode()->svg())
+        ->toThrow(QrCodeGeneratorMissing::class);
 });
 
 it('scopes to enabled short urls only', function () {

@@ -16,7 +16,7 @@ Headless URL-shortening engine for Laravel. Zero dependency on Filament — work
 
 - **High throughput.** The redirect pipeline is a chain of independent, testable stages (`Illuminate\Pipeline`), with the resolved link cached and analytics writes made asynchronous — no external integration failure (GeoIP, Safe Browsing, VPN detection) can ever break a redirect.
 - **Contract-driven.** Every swappable piece — analytics driver, conversion API dispatcher, DNS verifier, Safe Browsing checker, VPN detector — is an interface under `src/Contracts/`, with a default implementation and extensible registries (`AnalyticsDriverRegistry`, `PixelProviderRegistry`, `FilterTypeRegistry`, `ImporterDriverRegistry`).
-- **Minimal dependencies.** Only `spatie/laravel-package-tools` and `illuminate/contracts` are required. GeoIP (MaxMind), multi-tenancy (`stancl/tenancy`) and Redis (`predis/predis`) are all optional — the package works perfectly without them, each integration guarded by `class_exists`/a feature flag.
+- **Minimal dependencies.** Only `spatie/laravel-package-tools` and `illuminate/contracts` are required. GeoIP (MaxMind), multi-tenancy (`stancl/tenancy`), Redis (`predis/predis`) and QR codes (`endroid/qr-code`) are all optional — the package works perfectly without them, each integration guarded by `class_exists`/a feature flag.
 - **Multi-language.** pt_BR, en and es ship out of the box — no hardcoded strings outside `resources/lang`.
 
 ## Requirements
@@ -144,6 +144,7 @@ Each stage can short-circuit by returning a `Response` directly (wrong password,
 | **Pixels** | Retargeting pixels (Meta, Google Ads, TikTok, GA4) rendered on the interstitial, with an optional consent banner. |
 | **Organization** | Hierarchical folders, tags, reusable UTM templates ("campaigns"), archiving. |
 | **Import/Export** | Built-in CSV importer, Bitly API v4 as the reference per-provider importer, CSV export via `CsvLinkExporter`. |
+| **QR codes** | `$shortUrl->qrCode()->svg()`/`->png()`/`->dataUri()` via the optional `endroid/qr-code` package. Size/margin configurable via method args. |
 | **ClickHouse** | Alternative `VisitRepository` driver over ClickHouse's native HTTP interface — same contract, no client library dependency. |
 | **Multi-tenancy** | Fully feature-flagged. Auto-scoped via `stancl/tenancy` when installed, or a `Contracts\TenantResolver` binding for any other tenancy system. Configurable plan limits (`links_per_month`, `domains`, `retention_days`) via `Contracts\PlanResolver`. Custom domain resolution pluggable via `Contracts\CustomDomainResolver` for apps with existing domain infra. |
 
@@ -252,6 +253,7 @@ ShortUrl::resolve(string $key, ?string $host = null): ?ShortUrlModel
 
 // ShortUrlModel
 $shortUrl->fullUrl(): string // ready-to-share link (custom domain or app host)
+$shortUrl->qrCode(int $size = 300, int $margin = 10): QrCodeGenerator // ->svg() / ->png() / ->dataUri()
 
 // ShortUrlBuilder, in addition to the setters shown above
 ->customDomain(?int $customDomainId)
