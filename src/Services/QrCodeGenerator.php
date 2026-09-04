@@ -9,8 +9,9 @@ use JeffersonGoncalves\LaravelShortUrl\Exceptions\QrCodeGeneratorMissing;
 
 /**
  * Generates a QR code pointing at a short url's full link. Requires the
- * optional `endroid/qr-code` package (see composer.json "suggest") — never
- * a hard dependency, since most installs don't need it.
+ * optional `endroid/qr-code` ^6.0 package (see composer.json "suggest") —
+ * never a hard dependency, since most installs don't need it. Targets v6's
+ * constructor-based Builder (v5's Builder::create() fluent API is gone).
  */
 class QrCodeGenerator
 {
@@ -29,11 +30,7 @@ class QrCodeGenerator
             throw new QrCodeGeneratorMissing;
         }
 
-        return Builder::create()
-            ->writer(new SvgWriter)
-            ->data($this->data)
-            ->size($this->size)
-            ->margin($this->margin)
+        return (new Builder(writer: new SvgWriter, data: $this->data, size: $this->size, margin: $this->margin))
             ->build()
             ->getString();
     }
@@ -47,11 +44,7 @@ class QrCodeGenerator
             throw new QrCodeGeneratorMissing;
         }
 
-        return Builder::create()
-            ->writer(new PngWriter)
-            ->data($this->data)
-            ->size($this->size)
-            ->margin($this->margin)
+        return (new Builder(writer: new PngWriter, data: $this->data, size: $this->size, margin: $this->margin))
             ->build()
             ->getString();
     }
@@ -65,11 +58,9 @@ class QrCodeGenerator
             throw new QrCodeGeneratorMissing;
         }
 
-        return Builder::create()
-            ->writer($format === 'svg' ? new SvgWriter : new PngWriter)
-            ->data($this->data)
-            ->size($this->size)
-            ->margin($this->margin)
+        $writer = $format === 'svg' ? new SvgWriter : new PngWriter;
+
+        return (new Builder(writer: $writer, data: $this->data, size: $this->size, margin: $this->margin))
             ->build()
             ->getDataUri();
     }
