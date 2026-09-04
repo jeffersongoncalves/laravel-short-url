@@ -30,7 +30,7 @@
         "pestphp/pest-plugin-laravel": "^4.0"
     },
     "suggest": {
-        "endroid/qr-code": "Required to generate QR codes for short urls (^5.0|^6.0).",
+        "endroid/qr-code": "Required to generate QR codes for short urls (^6.0).",
         "geoip2/geoip2": "Required to resolve visitor geolocation with the MaxMind GeoIP driver.",
         "predis/predis": "Required for Redis-buffered visit counters when the phpredis extension isn't available.",
         "stancl/tenancy": "Required to resolve the current tenant automatically when short-url.tenancy.enabled is on."
