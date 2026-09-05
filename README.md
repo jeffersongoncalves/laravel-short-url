@@ -302,7 +302,7 @@ CI runs against PHP 8.4 / Laravel 13 on SQLite, MySQL, and PostgreSQL.
 
 This package ships a [Laravel Boost](https://github.com/laravel/boost) skill (`resources/boost/skills/short-url-development/`) and guideline (`resources/boost/guidelines/core.blade.php`) — if your project uses Boost, an AI assistant picks these up automatically and already knows the facade, contracts, destination types, campaign tagging, and conventions above.
 
-## Security
+## Security Vulnerabilities
 
 Found a security vulnerability? See [SECURITY.md](.github/SECURITY.md).
 
