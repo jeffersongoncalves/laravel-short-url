@@ -2,12 +2,15 @@
 
 namespace JeffersonGoncalves\LaravelShortUrl;
 
+use Illuminate\Support\Facades\Cache;
 use JeffersonGoncalves\LaravelShortUrl\Exceptions\RequiredUtmParameterMissing;
 use JeffersonGoncalves\LaravelShortUrl\Models\CustomDomain;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl as ShortUrlModel;
 use JeffersonGoncalves\LaravelShortUrl\Models\UtmTemplate;
 use JeffersonGoncalves\LaravelShortUrl\Services\KeyGenerator;
 use JeffersonGoncalves\LaravelShortUrl\Tenancy\PlanLimits;
+use JeffersonGoncalves\LaravelShortUrl\Tenancy\TenantContext;
+use Throwable;
 
 class ShortUrlManager
 {
@@ -80,6 +83,96 @@ class ShortUrlManager
         $customDomainId = $host ? CustomDomain::forHost($host)?->id : null;
 
         return ShortUrlModel::findByKey($key, $customDomainId);
+    }
+
+    /**
+     * Batch counterpart to create()/resolve() for routing many destination
+     * URLs through short links at once (e.g. rewriting every outbound link
+     * in a large document) — the per-URL path pays its own cache read + DB
+     * lookup on every call, which turns into a multi-minute operation on a
+     * document with thousands of links.
+     *
+     * One batched cache read covers every URL, one whereIn() query covers
+     * whatever the cache missed, and only genuinely new destinations pay
+     * the real create() cost (plan-limit check, key generation, insert).
+     * A failure minting one URL's key falls back to that URL unchanged
+     * instead of losing the rest of the batch.
+     *
+     * @param  array<string>  $urls
+     * @return array<string, string> destination url => full short url, or the destination url unchanged if it couldn't be shortened
+     */
+    public function resolveMany(array $urls): array
+    {
+        $urls = array_values(array_unique($urls));
+
+        if ($urls === []) {
+            return [];
+        }
+
+        $cacheEnabled = config('short-url.cache.enabled', true);
+        $cached = $cacheEnabled
+            ? Cache::many(array_map(static::destinationCacheKey(...), $urls))
+            : [];
+
+        $results = [];
+        $pending = [];
+
+        foreach ($urls as $url) {
+            $shortUrl = $cached[static::destinationCacheKey($url)] ?? null;
+
+            if ($shortUrl instanceof ShortUrlModel) {
+                $results[$url] = $shortUrl->fullUrl();
+            } else {
+                $pending[] = $url;
+            }
+        }
+
+        if ($pending === []) {
+            return $results;
+        }
+
+        $existing = ShortUrlModel::query()
+            ->whereIn('destination_url', $pending)
+            ->get()
+            ->keyBy('destination_url');
+
+        $toCache = [];
+
+        foreach ($pending as $url) {
+            $shortUrl = $existing->get($url);
+
+            if (! $shortUrl) {
+                try {
+                    $shortUrl = $this->create(['destination_url' => $url]);
+                } catch (Throwable) {
+                    $results[$url] = $url;
+
+                    continue;
+                }
+            }
+
+            $results[$url] = $shortUrl->fullUrl();
+            $toCache[static::destinationCacheKey($url)] = $shortUrl;
+        }
+
+        if ($cacheEnabled && $toCache !== []) {
+            Cache::putMany($toCache, (int) config('short-url.cache.ttl', 3600));
+        }
+
+        return $results;
+    }
+
+    /**
+     * Tenant-scoped so two tenants sharing the same destination URL never
+     * see each other's cached short url.
+     */
+    public static function destinationCacheKey(string $destinationUrl): string
+    {
+        $tenantId = app(TenantContext::class)->currentId();
+
+        return config('short-url.cache.prefix', 'short_url').':destination:'
+            .($tenantId !== null ? "{$tenantId}:" : '')
+            .md5($destinationUrl);
     }
 
     /**

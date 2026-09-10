@@ -66,6 +66,21 @@ $link->fullUrl(); // https://short.test/promo25
 
 Redirecting itself needs no extra code: any request to `GET /{urlKey}` already flows through the full pipeline.
 
+## Batch resolve/create
+
+Routing many destination URLs through short links at once — e.g. rewriting every outbound link in a large rendered document — shouldn't pay a cache read + DB round trip per link. `resolveMany()` dedupes the input, does one batched cache read plus one `whereIn()` query for whatever the cache missed, and only pays the real `create()` cost for genuinely new destinations:
+
+```php
+$links = ShortUrl::resolveMany([
+    'https://example.com/product-a',
+    'https://example.com/product-b',
+]);
+
+// ['https://example.com/product-a' => 'https://short.test/aBc1234', 'https://example.com/product-b' => 'https://short.test/xYz9876']
+```
+
+A destination that fails to mint a key (plan limit, required UTM missing, ...) falls back to itself in the result instead of losing the rest of the batch.
+
 ## Campaign tagging (UTM)
 
 Every link can carry its own `utm_source`/`utm_medium`/`utm_campaign`/`utm_term`/`utm_content` — set directly, or from a reusable, tenant-scoped `UtmTemplate` ("campaign"):
@@ -269,6 +284,7 @@ All self-register with the scheduler (`packageBooted()`), respecting their confi
 ShortUrl::create(array $attributes): ShortUrlModel
 ShortUrl::destination(string $url): ShortUrlBuilder
 ShortUrl::resolve(string $key, ?string $host = null): ?ShortUrlModel
+ShortUrl::resolveMany(array $urls): array // destination url => full short url (or the destination url unchanged on failure)
 
 // ShortUrlModel
 $shortUrl->fullUrl(): string // ready-to-share link (custom domain or app host)

@@ -10,6 +10,7 @@ use JeffersonGoncalves\LaravelShortUrl\Models\CustomDomain;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 use JeffersonGoncalves\LaravelShortUrl\Pipeline\Stages\ResolveShortUrl;
 use JeffersonGoncalves\LaravelShortUrl\Security\DestinationUrlCollector;
+use JeffersonGoncalves\LaravelShortUrl\ShortUrlManager;
 
 class ShortUrlObserver
 {
@@ -56,6 +57,13 @@ class ShortUrlObserver
     protected function flush(ShortUrl $shortUrl): void
     {
         Cache::forget(ResolveShortUrl::cacheKey($this->resolveHost(), $shortUrl->url_key));
+        Cache::forget(ShortUrlManager::destinationCacheKey($shortUrl->destination_url));
+
+        $originalDestination = $shortUrl->getOriginal('destination_url');
+
+        if ($originalDestination && $originalDestination !== $shortUrl->destination_url) {
+            Cache::forget(ShortUrlManager::destinationCacheKey($originalDestination));
+        }
 
         if ($shortUrl->custom_domain_id) {
             $domain = CustomDomain::query()->find($shortUrl->custom_domain_id)?->domain;
