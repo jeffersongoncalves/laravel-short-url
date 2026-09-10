@@ -75,7 +75,7 @@ it('aggregates across a set of links via forShortUrls()', function () {
         ->get();
 
     expect($payload->totalVisits)->toBe(2)
-        ->and($payload->utmMediumStats)->toBe(['sms' => 1, 'email' => 1]);
+        ->and(collect($payload->utmMediumStats)->sortKeys()->all())->toBe(['email' => 1, 'sms' => 1]);
 });
 
 it('returns empty totals for forShortUrls([]) instead of aggregating everything', function () {
