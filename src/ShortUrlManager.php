@@ -99,9 +99,12 @@ class ShortUrlManager
      * instead of losing the rest of the batch.
      *
      * @param  array<string>  $urls
+     * @param  array<string, mixed>  $attributes  merged into every newly-created row (e.g. `internal_ref`,
+     *                                            a fixed `title`) — never applied to a row already resolved
+     *                                            from cache or an existing `destination_url` match
      * @return array<string, string> destination url => full short url, or the destination url unchanged if it couldn't be shortened
      */
-    public function resolveMany(array $urls): array
+    public function resolveMany(array $urls, array $attributes = []): array
     {
         $urls = array_values(array_unique($urls));
 
@@ -143,7 +146,7 @@ class ShortUrlManager
 
             if (! $shortUrl) {
                 try {
-                    $shortUrl = $this->create(['destination_url' => $url]);
+                    $shortUrl = $this->create(['destination_url' => $url] + $attributes);
                 } catch (Throwable) {
                     $results[$url] = $url;
 

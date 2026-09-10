@@ -31,6 +31,19 @@ it('mints a new short url for a genuinely new destination', function () {
         ->and($results['https://example.com/new'])->toBe($shortUrl->fullUrl());
 });
 
+it('applies the given attributes to a newly-created row but never to one resolved from an existing match', function () {
+    $existing = app(ShortUrlManager::class)->create(['destination_url' => 'https://example.com/existing']);
+
+    app(ShortUrlManager::class)->resolveMany(
+        ['https://example.com/new', 'https://example.com/existing'],
+        ['internal_ref' => 'outbound']
+    );
+
+    expect(ShortUrl::query()->where('destination_url', 'https://example.com/new')->value('internal_ref'))
+        ->toBe('outbound')
+        ->and($existing->refresh()->internal_ref)->not->toBe('outbound');
+});
+
 it('reuses an already existing short url for the same destination instead of creating a duplicate', function () {
     $existing = app(ShortUrlManager::class)->create(['destination_url' => 'https://example.com/existing']);
 

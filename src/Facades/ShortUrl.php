@@ -11,7 +11,7 @@ use JeffersonGoncalves\LaravelShortUrl\ShortUrlManager;
  * @method static ShortUrlModel create(array<string, mixed> $attributes)
  * @method static ShortUrlBuilder destination(string $url)
  * @method static ShortUrlModel|null resolve(string $key, ?string $host = null)
- * @method static array<string, string> resolveMany(array<string> $urls)
+ * @method static array<string, string> resolveMany(array<string> $urls, array<string, mixed> $attributes = [])
  *
  * @see ShortUrlManager
  */
