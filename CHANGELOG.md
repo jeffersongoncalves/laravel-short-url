@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0](https://github.com/jeffersongoncalves/laravel-short-url/compare/4.4.7...5.0.0) - 2026-09-11
+
+### Breaking Changes
+
+- Device/browser/OS parsing, bot detection, IP anonymization, GeoIP resolution, VPN/proxy/Tor detection, and the GDPR export/erasure internals now live in [`jeffersongoncalves/laravel-visitor-fingerprint`](https://github.com/jeffersongoncalves/laravel-visitor-fingerprint) instead of being duplicated in this package (#24).
+- `Contracts\GeoIpDriver`, `Contracts\VpnDetectionDriver`, `Data\GeoLocation`, and `Data\ThreatResult` moved to the `JeffersonGoncalves\VisitorFingerprint` namespace. Rebind any custom implementation against the vendor's contracts instead of this package's own.
+- Config keys moved to `config/visitor-fingerprint.php`: `short-url.tracking.geoip.*` → `visitor-fingerprint.geoip.*`, `short-url.tracking.trust_cdn_headers` (removed — selecting the `headers` GeoIP driver is itself the opt-in now), `short-url.tracking.ip_hash_salt` → `visitor-fingerprint.hash_salt`, `short-url.security.vpn_detection.{driver,cache_ttl,proxycheck_api_key}` → `visitor-fingerprint.vpn_detection.*`. `short-url.security.vpn_detection.mode` (off/flag/block) is unchanged — it's this package's own enforcement policy.
+- `Compliance\PersonalDataService` keeps its existing `exportForIp()`/`forgetForIp()` API — it's now a thin wrapper over the vendor's `Compliance\PersonalDataExporter`, so most consumers need no code change there.
+
+See #25 for the full diff and migration notes.
+
 ## [4.4.7](https://github.com/jeffersongoncalves/laravel-short-url/compare/4.4.6...4.4.7) - 2026-09-11
 
 **Full Changelog**: https://github.com/jeffersongoncalves/laravel-short-url/compare/4.4.6...4.4.7
@@ -120,6 +131,7 @@ ALTER TABLE short_url_pixels ALTER COLUMN config TYPE jsonb USING config::jsonb;
 
 
 
+
 ```
 Repeat per affected column/table above.
 
@@ -175,6 +187,7 @@ public function register(): void
 
 
 
+
 ```
 See the README's "Multi-tenancy without stancl/tenancy" section for the full walkthrough.
 
@@ -207,6 +220,7 @@ SHORT_URL_TRUST_CDN_HEADERS=true
 
 
 
+
 ```
 to keep getting geo data (only do this if your app is only reachable through the trusted edge/CDN injecting those headers).
 
@@ -225,6 +239,7 @@ If you rely on the old explicit-route behavior (e.g. you know for certain no app
 
 ```env
 SHORT_URL_ROUTE_FALLBACK=false
+
 
 
 
