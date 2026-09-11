@@ -3,6 +3,7 @@
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use JeffersonGoncalves\LaravelShortUrl\Exceptions\QrCodeGeneratorMissing;
 use JeffersonGoncalves\LaravelShortUrl\Models\CustomDomain;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
@@ -83,11 +84,22 @@ it('builds the full url against the app host by default', function () {
 });
 
 it('falls back to app.url\'s host when no route.domain is configured', function () {
-    config(['short-url.route.domain' => null, 'app.url' => 'https://app.test', 'short-url.route.prefix' => '']);
+    // fullUrl() goes through the app's own URL generator (url()) rather
+    // than re-parsing config('app.url') by hand — Laravel resolves the
+    // generator's root once, so a bare config(['app.url' => ...]) mutation
+    // is never actually observed by url() either. URL::forceRootUrl() is
+    // the real API for changing it at runtime (e.g. per-tenant), and is
+    // what url() does pick up.
+    config(['short-url.route.domain' => null, 'short-url.route.prefix' => '']);
+    URL::forceRootUrl('https://app.test');
+    URL::forceScheme('https');
 
     $shortUrl = ShortUrl::factory()->create(['url_key' => 'aB3xK9']);
 
     expect($shortUrl->fullUrl())->toBe('https://app.test/aB3xK9');
+
+    URL::forceRootUrl(config('app.url'));
+    URL::forceScheme(null);
 });
 
 it('builds the full url against the verified custom domain when set', function () {

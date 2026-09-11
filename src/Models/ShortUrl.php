@@ -183,21 +183,27 @@ class ShortUrl extends Model
             ? CustomDomain::query()->find($this->custom_domain_id)?->domain
             : null;
         $routeDomain = config('short-url.route.domain');
+        $prefix = trim((string) config('short-url.route.prefix'), '/');
+        $path = ($prefix !== '' ? "{$prefix}/" : '').$this->url_key;
 
         if ($customDomain || $routeDomain) {
             // A dedicated short-link host — its own config, not app.url's —
             // is always assumed to be TLS.
-            $host = $customDomain ?? $routeDomain;
-            $scheme = 'https';
-        } else {
-            $appUrl = (string) config('app.url');
-            $host = parse_url($appUrl, PHP_URL_HOST) ?? 'localhost';
-            $scheme = (string) (parse_url($appUrl, PHP_URL_SCHEME) ?? 'https');
+            $host = rtrim((string) ($customDomain ?? $routeDomain), '/');
+
+            return "https://{$host}/{$path}";
         }
 
-        $prefix = trim((string) config('short-url.route.prefix'), '/');
-
-        return rtrim("{$scheme}://{$host}", '/').($prefix !== '' ? "/{$prefix}" : '').'/'.$this->url_key;
+        // Built through the app's own URL generator instead of parsing
+        // config('app.url') by hand, so this agrees with every other link
+        // the app mints (via the url()/route() helpers) — respects
+        // URL::forceHttps(), trusted-proxy scheme detection, forceRootUrl(),
+        // etc. A raw config('app.url') read silently disagrees with those
+        // whenever the literal APP_URL scheme differs from what the app
+        // actually forces at runtime (confirmed: OutboundLink::to(), which
+        // does use url(), minted https links while this minted http ones
+        // for the same request).
+        return url($path);
     }
 
     /**
