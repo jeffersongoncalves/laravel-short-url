@@ -66,6 +66,17 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
 {
     public static string $name = 'laravel-short-url';
 
+    // This array's order is cosmetic, not load order: these stub filenames
+    // carry no timestamp prefix, so Laravel's Migrator sorts them
+    // alphabetically by filename regardless of array position — a
+    // consuming app/package running `migrate` (or Testbench's
+    // RefreshDatabase, which downstream plugins' test suites rely on) hits
+    // that real order, not this one. Keep every migration name prefixed
+    // with a verb that alphabetically sorts after every table it depends
+    // on ("create_" before "update_"/"add_" that alters what "create_"
+    // made) — an "add_"-prefixed alter migration previously sorted before
+    // its own "create_" table and broke every downstream consumer's test
+    // suite (see filament-short-url#18).
     /**
      * @var array<int, string>
      */
@@ -82,7 +93,7 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
         'create_short_url_folders_table',
         'create_short_url_tags_table',
         'create_short_url_utm_templates_table',
-        'add_date_led_indexes_to_short_url_visits_and_daily_stats_tables',
+        'update_short_url_visits_and_daily_stats_tables_indexes',
     ];
 
     public function configurePackage(Package $package): void
