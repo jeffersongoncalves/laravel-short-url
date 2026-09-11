@@ -4,6 +4,7 @@ namespace JeffersonGoncalves\LaravelShortUrl\Tests;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use JeffersonGoncalves\LaravelShortUrl\LaravelShortUrlServiceProvider;
+use JeffersonGoncalves\VisitorFingerprint\VisitorFingerprintServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra
@@ -13,6 +14,7 @@ abstract class TestCase extends Orchestra
     protected function getPackageProviders($app): array
     {
         return [
+            VisitorFingerprintServiceProvider::class,
             LaravelShortUrlServiceProvider::class,
         ];
     }

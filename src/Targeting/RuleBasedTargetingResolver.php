@@ -3,15 +3,15 @@
 namespace JeffersonGoncalves\LaravelShortUrl\Targeting;
 
 use Illuminate\Http\Request;
-use JeffersonGoncalves\LaravelShortUrl\Contracts\GeoIpDriver;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\TargetingResolver;
 use JeffersonGoncalves\LaravelShortUrl\Data\Destination;
-use JeffersonGoncalves\LaravelShortUrl\Data\GeoLocation;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 use JeffersonGoncalves\LaravelShortUrl\Support\AcceptLanguage;
-use JeffersonGoncalves\LaravelShortUrl\Support\BotDetector;
 use JeffersonGoncalves\LaravelShortUrl\Support\RefererClassifier;
-use JeffersonGoncalves\LaravelShortUrl\Support\UserAgentParser;
+use JeffersonGoncalves\VisitorFingerprint\Contracts\GeoIpDriver;
+use JeffersonGoncalves\VisitorFingerprint\Data\GeoLocation;
+use JeffersonGoncalves\VisitorFingerprint\Support\BotDetector;
+use JeffersonGoncalves\VisitorFingerprint\Support\UserAgentParser;
 use Throwable;
 
 /**

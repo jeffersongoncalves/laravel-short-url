@@ -3,7 +3,7 @@
 use JeffersonGoncalves\LaravelShortUrl\Compliance\PersonalDataService;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 use JeffersonGoncalves\LaravelShortUrl\Models\Visit;
-use JeffersonGoncalves\LaravelShortUrl\Support\IpAnonymizer;
+use JeffersonGoncalves\VisitorFingerprint\Support\IpAnonymizer;
 
 it('exports every visit matching the given ip', function () {
     $shortUrl = ShortUrl::factory()->create();

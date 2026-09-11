@@ -11,7 +11,8 @@ All classes are under `JeffersonGoncalves\LaravelShortUrl`.
 - **Facade**: `JeffersonGoncalves\LaravelShortUrl\Facades\ShortUrl` — `create()`, `destination()`, `resolve()`
 - **Manager/Builder**: `ShortUrlManager` (facade target), `ShortUrlBuilder` (fluent creation)
 - **Redirect pipeline**: `RedirectPipeline` running stages in `src/Pipeline/Stages/` — cache-backed, each stage can short-circuit with a `Response`
-- **Contracts**: `src/Contracts/` — `VisitRepository`, `GeoIpDriver`, `VpnDetectionDriver`, `AnalyticsDriver`, `SafeBrowsingChecker`, `StatsAggregator`, `TargetingResolver`, `DnsVerifier`, `SettingsRepository`, `ImporterDriver`, `ConversionApiDispatcher`
+- **Contracts**: `src/Contracts/` — `VisitRepository`, `AnalyticsDriver`, `SafeBrowsingChecker`, `StatsAggregator`, `TargetingResolver`, `DnsVerifier`, `SettingsRepository`, `ImporterDriver`, `ConversionApiDispatcher`
+- **Device/GeoIP/VPN/GDPR**: delegated to `jeffersongoncalves/laravel-visitor-fingerprint` — its `Contracts\GeoIpDriver`/`Contracts\VpnDetectionDriver`, `Support\UserAgentParser`/`BotDetector`/`IpAnonymizer`, and `Compliance\PersonalDataExporter` (wrapped by this package's own `Compliance\PersonalDataService`)
 - **Registries** (use `extend()`, not rebind): `AnalyticsDriverRegistry`, `PixelProviderRegistry`, `FilterTypeRegistry`, `ImporterDriverRegistry`
 
 ### Key Conventions

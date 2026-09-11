@@ -1,10 +1,10 @@
 <?php
 
 use Illuminate\Http\Request;
-use JeffersonGoncalves\LaravelShortUrl\Contracts\VpnDetectionDriver;
-use JeffersonGoncalves\LaravelShortUrl\Data\ThreatResult;
 use JeffersonGoncalves\LaravelShortUrl\Pipeline\RedirectContext;
 use JeffersonGoncalves\LaravelShortUrl\Pipeline\Stages\DetectVpnProxy;
+use JeffersonGoncalves\VisitorFingerprint\Contracts\VpnDetectionDriver;
+use JeffersonGoncalves\VisitorFingerprint\Data\ThreatResult;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 function bindFakeVpnDriver(ThreatResult $result): void

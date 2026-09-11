@@ -3,8 +3,8 @@
 namespace JeffersonGoncalves\LaravelShortUrl\Pipeline\Stages;
 
 use Closure;
-use JeffersonGoncalves\LaravelShortUrl\Contracts\VpnDetectionDriver;
 use JeffersonGoncalves\LaravelShortUrl\Pipeline\RedirectContext;
+use JeffersonGoncalves\VisitorFingerprint\Contracts\VpnDetectionDriver;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class DetectVpnProxy
