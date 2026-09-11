@@ -1,13 +1,13 @@
 <?php
 
 use Illuminate\Http\Request;
-use JeffersonGoncalves\LaravelShortUrl\Contracts\GeoIpDriver;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\VisitRepository;
-use JeffersonGoncalves\LaravelShortUrl\GeoIp\HeadersGeoIpDriver;
 use JeffersonGoncalves\LaravelShortUrl\Jobs\TrackShortUrlVisitJob;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 use JeffersonGoncalves\LaravelShortUrl\Models\Visit;
 use JeffersonGoncalves\LaravelShortUrl\Services\CounterBuffer;
+use JeffersonGoncalves\VisitorFingerprint\Contracts\GeoIpDriver;
+use JeffersonGoncalves\VisitorFingerprint\GeoIp\HeadersGeoIpDriver;
 
 /**
  * Regression for GH issue #3: HeadersGeoIpDriver used to read the live
@@ -15,10 +15,7 @@ use JeffersonGoncalves\LaravelShortUrl\Services\CounterBuffer;
  * worker — it only appeared to work on QUEUE_CONNECTION=sync.
  */
 it('resolves cdn geo from the header snapshot taken on the request thread, not the current request', function () {
-    config([
-        'short-url.tracking.geoip.driver' => 'headers',
-        'short-url.tracking.trust_cdn_headers' => true,
-    ]);
+    config(['visitor-fingerprint.geoip.driver' => 'headers']);
 
     $shortUrl = ShortUrl::factory()->create(['track_visits' => true, 'track_ip_address' => true])->fresh();
 

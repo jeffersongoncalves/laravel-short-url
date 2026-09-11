@@ -4,8 +4,8 @@ namespace JeffersonGoncalves\LaravelShortUrl\Pipeline\Stages;
 
 use Closure;
 use JeffersonGoncalves\LaravelShortUrl\Pipeline\RedirectContext;
-use JeffersonGoncalves\LaravelShortUrl\Support\BotDetector;
-use JeffersonGoncalves\LaravelShortUrl\Support\UserAgentParser;
+use JeffersonGoncalves\VisitorFingerprint\Support\BotDetector;
+use JeffersonGoncalves\VisitorFingerprint\Support\UserAgentParser;
 
 /**
  * Fast-path only: UA signature match plus device type/OS name, cheap enough

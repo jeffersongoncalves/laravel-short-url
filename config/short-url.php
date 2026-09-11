@@ -120,33 +120,25 @@ return [
     |
     | - driver: VisitRepository implementation. "eloquent" ships with the
     |   package; "clickhouse" is added in a later phase.
-    | - trust_cdn_headers: read geo data from CDN-injected headers (see
-    |   HeadersGeoIpDriver) instead of/before calling an external service.
-    | - geoip.driver: headers|ip_api|maxmind.
     | - counter_buffering: buffer visit counters in Redis instead of writing
     |   the short_urls row on every redirect. Flushed by
     |   short-url:sync-counters. Falls back to a queued direct DB increment
     |   (IncrementVisitJob) when disabled or when Redis is unreachable.
-    | - ip_hash_salt: salt mixed into the stored IP hash. Rotate periodically;
-    |   rotating it breaks unique-visit continuity by design (LGPD).
     | - retention_days: visit rows older than this are pruned by
     |   short-url:aggregate-and-prune after being folded into daily_stats.
+    |
+    | GeoIP resolution and the IP hash salt are delegated to
+    | jeffersongoncalves/laravel-visitor-fingerprint — configure
+    | visitor-fingerprint.geoip.driver (headers|ip_api|maxmind),
+    | visitor-fingerprint.geoip.maxmind_database_path, and
+    | visitor-fingerprint.hash_salt instead of a short-url.* equivalent.
     |
     */
     'tracking' => [
         'driver' => env('SHORT_URL_VISIT_REPOSITORY', 'eloquent'),
 
-        'trust_cdn_headers' => env('SHORT_URL_TRUST_CDN_HEADERS', false),
-
-        'geoip' => [
-            'driver' => env('SHORT_URL_GEOIP_DRIVER', 'headers'),
-            'maxmind_database_path' => env('SHORT_URL_MAXMIND_DB_PATH'),
-        ],
-
         'counter_buffering' => env('SHORT_URL_COUNTER_BUFFERING', false),
         'redis_connection' => env('SHORT_URL_REDIS_CONNECTION', 'default'),
-
-        'ip_hash_salt' => env('SHORT_URL_IP_HASH_SALT'),
 
         'retention_days' => env('SHORT_URL_VISIT_RETENTION_DAYS', 400),
 
@@ -210,7 +202,10 @@ return [
     | - rate_limit: per-IP throttling on the redirect route itself. Off by
     |   default — most installs sit behind an edge/CDN limiter already.
     | - vpn_detection.mode: off|flag|block. "flag" only records is_vpn/
-    |   is_proxy/... on the visit; "block" also 403s the redirect.
+    |   is_proxy/... on the visit; "block" also 403s the redirect. Detection
+    |   itself is delegated to jeffersongoncalves/laravel-visitor-fingerprint
+    |   — configure visitor-fingerprint.vpn_detection.driver/cache_ttl/
+    |   proxycheck_api_key instead of a short-url.* equivalent.
     | - safe_browsing: scans a short url's destination (and, for split/
     |   rules types, every variant/rule destination) via Google Safe
     |   Browsing. mode "sync" blocks create/update on an unsafe verdict;
@@ -235,9 +230,6 @@ return [
 
         'vpn_detection' => [
             'mode' => env('SHORT_URL_VPN_DETECTION_MODE', 'off'),
-            'driver' => env('SHORT_URL_VPN_DETECTION_DRIVER', 'ip_api'),
-            'cache_ttl' => env('SHORT_URL_VPN_DETECTION_CACHE_TTL', 3600),
-            'proxycheck_api_key' => env('SHORT_URL_PROXYCHECK_API_KEY'),
         ],
 
         'safe_browsing' => [

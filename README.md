@@ -192,6 +192,8 @@ Every option is documented inline in `config/short-url.php`. Main groups:
 
 Settings can also be read/written at runtime via `Contracts\SettingsRepository`, with a declarative schema (`schema()`) for building dynamic forms in the UI plugin.
 
+Device/browser/OS parsing, bot detection, IP anonymization, GeoIP resolution, and VPN/proxy/Tor detection are provided by [`jeffersongoncalves/laravel-visitor-fingerprint`](https://github.com/jeffersongoncalves/laravel-visitor-fingerprint) — configure those via its own `config/visitor-fingerprint.php` (`geoip.driver`, `vpn_detection.driver`, `hash_salt`, ...), not `short-url.tracking.*`. `short-url.security.vpn_detection.mode` (off/flag/block) stays here since it's this package's own enforcement policy.
+
 ### Multi-tenancy without stancl/tenancy
 
 Every tenant-scoped model (`ShortUrl`, `CustomDomain`, `Folder`, `Tag`, `UtmTemplate`, and settings) resolves "the current tenant" through a single class, `Tenancy\TenantContext`. If you have your own tenancy — a custom global scope on your own tenant model, for example — bind `Contracts\TenantResolver` instead of installing stancl/tenancy:
@@ -296,10 +298,13 @@ $shortUrl->qrCode(int $size = 300, int $margin = 10): QrCodeGenerator // ->svg()
 ->utm(array $attributes) // utm_source, utm_medium, utm_campaign, utm_term, utm_content
 
 // src/Contracts/
-VisitRepository, GeoIpDriver, VpnDetectionDriver, AnalyticsDriver,
+VisitRepository, AnalyticsDriver,
 SafeBrowsingChecker, StatsAggregator, TargetingResolver,
 DnsVerifier, SettingsRepository, ImporterDriver,
 ConversionApiDispatcher, TenantResolver, PlanResolver, CustomDomainResolver
+
+// Device/GeoIP/VPN/GDPR — provided by jeffersongoncalves/laravel-visitor-fingerprint
+VisitorFingerprint\Contracts\GeoIpDriver, VisitorFingerprint\Contracts\VpnDetectionDriver
 
 // src/Registries/
 FilterTypeRegistry, AnalyticsDriverRegistry,

@@ -20,22 +20,17 @@ use JeffersonGoncalves\LaravelShortUrl\Console\Commands\SyncCountersCommand;
 use JeffersonGoncalves\LaravelShortUrl\Console\Commands\VerifyDomainsCommand;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\ConversionApiDispatcher;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\DnsVerifier;
-use JeffersonGoncalves\LaravelShortUrl\Contracts\GeoIpDriver;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\SafeBrowsingChecker;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\SettingsRepository;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\StatsAggregator;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\TargetingResolver;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\VisitRepository;
-use JeffersonGoncalves\LaravelShortUrl\Contracts\VpnDetectionDriver;
 use JeffersonGoncalves\LaravelShortUrl\Conversions\GoogleEnhancedConversionsDispatcher;
 use JeffersonGoncalves\LaravelShortUrl\Conversions\LinkedInCapiDispatcher;
 use JeffersonGoncalves\LaravelShortUrl\Conversions\MetaCapiDispatcher;
 use JeffersonGoncalves\LaravelShortUrl\Conversions\NullConversionApiDispatcher;
 use JeffersonGoncalves\LaravelShortUrl\Conversions\TikTokCapiDispatcher;
 use JeffersonGoncalves\LaravelShortUrl\Dns\NativeDnsVerifier;
-use JeffersonGoncalves\LaravelShortUrl\GeoIp\HeadersGeoIpDriver;
-use JeffersonGoncalves\LaravelShortUrl\GeoIp\IpApiGeoIpDriver;
-use JeffersonGoncalves\LaravelShortUrl\GeoIp\MaxMindGeoIpDriver;
 use JeffersonGoncalves\LaravelShortUrl\Importers\BitlyImporterDriver;
 use JeffersonGoncalves\LaravelShortUrl\Importers\CsvImporterDriver;
 use JeffersonGoncalves\LaravelShortUrl\Models\CustomDomain;
@@ -51,8 +46,6 @@ use JeffersonGoncalves\LaravelShortUrl\Registries\PixelProviderRegistry;
 use JeffersonGoncalves\LaravelShortUrl\Repositories\ClickHouseVisitRepository;
 use JeffersonGoncalves\LaravelShortUrl\Repositories\EloquentVisitRepository;
 use JeffersonGoncalves\LaravelShortUrl\Security\GoogleSafeBrowsingChecker;
-use JeffersonGoncalves\LaravelShortUrl\Security\IpApiVpnDetectionDriver;
-use JeffersonGoncalves\LaravelShortUrl\Security\ProxyCheckVpnDetectionDriver;
 use JeffersonGoncalves\LaravelShortUrl\Services\CounterBuffer;
 use JeffersonGoncalves\LaravelShortUrl\Settings\DatabaseSettingsRepository;
 use JeffersonGoncalves\LaravelShortUrl\Stats\EloquentStatsAggregator;
@@ -136,18 +129,7 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
         $this->app->bind(StatsAggregator::class, EloquentStatsAggregator::class);
         $this->app->bind(TargetingResolver::class, RuleBasedTargetingResolver::class);
 
-        $this->app->bind(GeoIpDriver::class, fn ($app) => match (config('short-url.tracking.geoip.driver', 'headers')) {
-            'ip_api' => new IpApiGeoIpDriver,
-            'maxmind' => new MaxMindGeoIpDriver,
-            default => new HeadersGeoIpDriver($app['request']),
-        });
-
         $this->app->singleton(SafeBrowsingChecker::class, GoogleSafeBrowsingChecker::class);
-
-        $this->app->bind(VpnDetectionDriver::class, fn () => match (config('short-url.security.vpn_detection.driver', 'ip_api')) {
-            'proxycheck_io' => new ProxyCheckVpnDetectionDriver,
-            default => new IpApiVpnDetectionDriver,
-        });
 
         $this->app->singleton(AnalyticsDriverRegistry::class);
 

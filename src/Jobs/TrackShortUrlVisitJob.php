@@ -7,18 +7,18 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use JeffersonGoncalves\LaravelShortUrl\Contracts\GeoIpDriver;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\VisitRepository;
-use JeffersonGoncalves\LaravelShortUrl\Data\GeoLocation;
 use JeffersonGoncalves\LaravelShortUrl\Events\ShortUrlVisited;
-use JeffersonGoncalves\LaravelShortUrl\GeoIp\HeadersGeoIpDriver;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 use JeffersonGoncalves\LaravelShortUrl\Models\Visit;
 use JeffersonGoncalves\LaravelShortUrl\Registries\AnalyticsDriverRegistry;
 use JeffersonGoncalves\LaravelShortUrl\Services\CounterBuffer;
-use JeffersonGoncalves\LaravelShortUrl\Support\IpAnonymizer;
 use JeffersonGoncalves\LaravelShortUrl\Support\RefererClassifier;
-use JeffersonGoncalves\LaravelShortUrl\Support\UserAgentParser;
+use JeffersonGoncalves\VisitorFingerprint\Contracts\GeoIpDriver;
+use JeffersonGoncalves\VisitorFingerprint\Data\GeoLocation;
+use JeffersonGoncalves\VisitorFingerprint\GeoIp\HeadersGeoIpDriver;
+use JeffersonGoncalves\VisitorFingerprint\Support\IpAnonymizer;
+use JeffersonGoncalves\VisitorFingerprint\Support\UserAgentParser;
 use Throwable;
 
 /**

@@ -3,10 +3,10 @@
 namespace JeffersonGoncalves\LaravelShortUrl\Pipeline\Stages;
 
 use Closure;
-use JeffersonGoncalves\LaravelShortUrl\GeoIp\HeadersGeoIpDriver;
 use JeffersonGoncalves\LaravelShortUrl\Jobs\TrackShortUrlVisitJob;
 use JeffersonGoncalves\LaravelShortUrl\Pipeline\RedirectContext;
 use JeffersonGoncalves\LaravelShortUrl\Support\AcceptLanguage;
+use JeffersonGoncalves\VisitorFingerprint\GeoIp\HeadersGeoIpDriver;
 use Throwable;
 
 /**
