@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.6](https://github.com/jeffersongoncalves/laravel-short-url/compare/4.4.5...4.4.6) - 2026-09-11
+
+Fixed
+
+- ShortUrl::fullUrl() now builds through the app's own URL generator
+  (url()) instead of parsing config('app.url') by hand, so it agrees
+  with URL::forceHttps() and trusted-proxy scheme detection like every
+  other link the app mints. Previously it could silently mint http://
+  links even when the app forces https everywhere else (e.g. non-local
+  environments, behind Cloudflare/a load balancer).
+
 ## [4.4.5](https://github.com/jeffersongoncalves/laravel-short-url/compare/4.4.4...4.4.5) - 2026-09-10
 
 ### What's Changed
@@ -103,6 +114,7 @@ ALTER TABLE short_url_pixels ALTER COLUMN config TYPE jsonb USING config::jsonb;
 
 
 
+
 ```
 Repeat per affected column/table above.
 
@@ -156,6 +168,7 @@ public function register(): void
 
 
 
+
 ```
 See the README's "Multi-tenancy without stancl/tenancy" section for the full walkthrough.
 
@@ -186,6 +199,7 @@ SHORT_URL_TRUST_CDN_HEADERS=true
 
 
 
+
 ```
 to keep getting geo data (only do this if your app is only reachable through the trusted edge/CDN injecting those headers).
 
@@ -204,6 +218,7 @@ If you rely on the old explicit-route behavior (e.g. you know for certain no app
 
 ```env
 SHORT_URL_ROUTE_FALLBACK=false
+
 
 
 
