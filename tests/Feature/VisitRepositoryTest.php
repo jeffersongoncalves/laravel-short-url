@@ -81,6 +81,18 @@ it('returns empty totals from aggregateMany([]) without querying every visit', f
         ->and($stats['country_stats'])->toBe([]);
 });
 
+it('aggregates across every short url when aggregateMany(null) is given no scope', function () {
+    $linkA = ShortUrl::factory()->create();
+    $linkB = ShortUrl::factory()->create();
+    makeVisit($linkA, ['country_code' => 'BR', 'is_bot' => false]);
+    makeVisit($linkB, ['country_code' => 'US', 'is_bot' => false]);
+
+    $stats = app(VisitRepository::class)->aggregateMany(null, now()->subDay(), now()->addDay());
+
+    expect($stats['visits_count'])->toBe(2)
+        ->and($stats['country_stats'])->toBe(['BR' => 1, 'US' => 1]);
+});
+
 it('prunes visits older than a given date', function () {
     $shortUrl = ShortUrl::factory()->create();
     makeVisit($shortUrl, ['visited_at' => now()->subDays(400)]);

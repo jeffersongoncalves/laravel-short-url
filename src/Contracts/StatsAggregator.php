@@ -17,9 +17,15 @@ interface StatsAggregator
      * the caller's job (via ShortUrl's own tenant-scoped Eloquent query);
      * this only does the aggregation math.
      *
-     * @param  array<int, int>  $shortUrlIds
+     * Pass null for "every short url, no scope" (a global/site-wide
+     * dashboard) instead of enumerating every id — that would otherwise
+     * build a whereIn() with one bound parameter per link, which exceeds
+     * PDO's 65,535 bind-parameter limit on a site with enough links (see
+     * issue #22). Pass [] for "explicitly nothing" instead.
+     *
+     * @param  array<int, int>|null  $shortUrlIds
      */
-    public function forShortUrls(array $shortUrlIds): static;
+    public function forShortUrls(?array $shortUrlIds): static;
 
     public function between(DateTimeInterface $from, DateTimeInterface $to): static;
 

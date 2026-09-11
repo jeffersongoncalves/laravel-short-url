@@ -26,6 +26,14 @@ class EloquentStatsAggregator implements StatsAggregator
      */
     protected ?array $shortUrlIds = null;
 
+    /**
+     * Whether for() or forShortUrls() has been called — needed because
+     * forShortUrls(null) is itself a valid "no scope" configuration, so
+     * $shortUrlIds alone can no longer tell "unconfigured" apart from
+     * "configured for every short url".
+     */
+    protected bool $configured = false;
+
     protected ?DateTimeInterface $from = null;
 
     protected ?DateTimeInterface $to = null;
@@ -36,14 +44,16 @@ class EloquentStatsAggregator implements StatsAggregator
     {
         $this->shortUrl = $shortUrl;
         $this->shortUrlIds = null;
+        $this->configured = true;
 
         return $this;
     }
 
-    public function forShortUrls(array $shortUrlIds): static
+    public function forShortUrls(?array $shortUrlIds): static
     {
         $this->shortUrlIds = $shortUrlIds;
         $this->shortUrl = null;
+        $this->configured = true;
 
         return $this;
     }
@@ -58,7 +68,7 @@ class EloquentStatsAggregator implements StatsAggregator
 
     public function get(): StatsPayload
     {
-        if ((! $this->shortUrl && $this->shortUrlIds === null) || ! $this->from || ! $this->to) {
+        if (! $this->configured || ! $this->from || ! $this->to) {
             throw new RuntimeException('Call for() or forShortUrls(), and between(), before get().');
         }
 
@@ -77,7 +87,7 @@ class EloquentStatsAggregator implements StatsAggregator
             $liveFrom = $from->greaterThan($today) ? $from : $today;
             $liveTotals = $this->shortUrl
                 ? $this->visits->aggregate($this->shortUrl->id, $liveFrom, $to)
-                : $this->visits->aggregateMany($this->shortUrlIds ?? [], $liveFrom, $to);
+                : $this->visits->aggregateMany($this->shortUrlIds, $liveFrom, $to);
             $this->merge($totals, $liveTotals);
         }
 
@@ -119,6 +129,9 @@ class EloquentStatsAggregator implements StatsAggregator
             ->when(
                 $this->shortUrl,
                 fn ($query) => $query->where('short_url_id', $this->shortUrl->id),
+            )
+            ->when(
+                ! $this->shortUrl && $this->shortUrlIds !== null,
                 fn ($query) => $query->whereIn('short_url_id', $this->shortUrlIds ?: [0]),
             )
             ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
