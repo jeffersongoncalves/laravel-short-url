@@ -26,12 +26,12 @@ return new class extends Migration
     {
         $prefix = config('short-url.table_prefix', 'short_url_');
 
-        Schema::table($prefix.'visits', function (Blueprint $table) use ($prefix) {
-            $table->dropIndex([$prefix.'visits_visited_at_short_url_id_index']);
+        Schema::table($prefix.'visits', function (Blueprint $table) {
+            $table->dropIndex(['visited_at', 'short_url_id']);
         });
 
-        Schema::table($prefix.'daily_stats', function (Blueprint $table) use ($prefix) {
-            $table->dropIndex([$prefix.'daily_stats_date_short_url_id_index']);
+        Schema::table($prefix.'daily_stats', function (Blueprint $table) {
+            $table->dropIndex(['date', 'short_url_id']);
         });
     }
 };
