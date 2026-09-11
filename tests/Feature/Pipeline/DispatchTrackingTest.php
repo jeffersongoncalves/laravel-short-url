@@ -134,7 +134,7 @@ it('never lets a tracking failure escape the stage', function () {
                 return [];
             }
 
-            public function aggregateMany(array $shortUrlIds, DateTimeInterface $from, DateTimeInterface $to): array
+            public function aggregateMany(?array $shortUrlIds, DateTimeInterface $from, DateTimeInterface $to): array
             {
                 return [];
             }

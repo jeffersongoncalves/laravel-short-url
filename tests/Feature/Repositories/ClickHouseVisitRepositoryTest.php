@@ -67,6 +67,18 @@ it('returns empty totals from aggregateMany([]) without hitting clickhouse', fun
     Http::assertNothingSent();
 });
 
+it('aggregates across every short url when aggregateMany(null) is given no scope', function () {
+    Http::fakeSequence()
+        ->push('{"visits_count":9,"unique_visits_count":7,"bot_visits_count":1}')
+        ->whenEmpty(Http::response(''));
+
+    $result = (new ClickHouseVisitRepository)->aggregateMany(null, now()->subDay(), now());
+
+    expect($result['visits_count'])->toBe(9);
+
+    Http::assertSent(fn ($request) => ! str_contains($request->body(), 'short_url_id IN'));
+});
+
 it('prunes and returns the number of rows removed', function () {
     Http::fakeSequence()
         ->push('{"c":3}')

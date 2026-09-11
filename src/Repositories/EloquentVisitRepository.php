@@ -51,14 +51,16 @@ class EloquentVisitRepository implements VisitRepository
         );
     }
 
-    public function aggregateMany(array $shortUrlIds, DateTimeInterface $from, DateTimeInterface $to): array
+    public function aggregateMany(?array $shortUrlIds, DateTimeInterface $from, DateTimeInterface $to): array
     {
         if ($shortUrlIds === []) {
             return $this->emptyResult();
         }
 
         return $this->runAggregate(
-            Visit::query()->whereIn('short_url_id', $shortUrlIds)->whereBetween('visited_at', [$from, $to])
+            Visit::query()
+                ->when($shortUrlIds !== null, fn ($query) => $query->whereIn('short_url_id', $shortUrlIds))
+                ->whereBetween('visited_at', [$from, $to])
         );
     }
 

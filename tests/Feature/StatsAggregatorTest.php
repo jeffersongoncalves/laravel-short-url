@@ -92,3 +92,44 @@ it('returns empty totals for forShortUrls([]) instead of aggregating everything'
 
     expect($payload->totalVisits)->toBe(0);
 });
+
+it('aggregates across every short url via forShortUrls(null) without a whereIn(all ids)', function () {
+    $linkA = ShortUrl::factory()->create();
+    $linkB = ShortUrl::factory()->create();
+    $prefix = config('short-url.table_prefix', 'short_url_');
+
+    DB::table($prefix.'daily_stats')->insert([
+        'short_url_id' => $linkA->id,
+        'date' => now()->subDay()->toDateString(),
+        'visits_count' => 4,
+        'unique_visits_count' => 3,
+        'bot_visits_count' => 0,
+        'device_stats' => json_encode([]),
+        'browser_stats' => json_encode([]),
+        'os_stats' => json_encode([]),
+        'country_stats' => json_encode([]),
+        'city_stats' => json_encode([]),
+        'referer_stats' => json_encode([]),
+        'referer_type_stats' => json_encode([]),
+        'utm_source_stats' => json_encode([]),
+        'utm_medium_stats' => json_encode([]),
+        'utm_campaign_stats' => json_encode([]),
+        'language_stats' => json_encode([]),
+        'variant_stats' => json_encode([]),
+        'hourly_stats' => json_encode([]),
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    Visit::query()->create([
+        'short_url_id' => $linkB->id, 'visited_at' => now(),
+        'is_bot' => false, 'ip_hash' => 'b1', 'created_at' => now(),
+    ]);
+
+    $payload = app(StatsAggregator::class)
+        ->forShortUrls(null)
+        ->between(now()->subDays(2), now())
+        ->get();
+
+    expect($payload->totalVisits)->toBe(5);
+});

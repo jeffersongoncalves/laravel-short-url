@@ -29,10 +29,17 @@ interface VisitRepository
      * belong in the set via ShortUrl's own (already tenant-scoped) Eloquent
      * query; this only does the aggregation math, never link selection.
      *
-     * @param  array<int, int>  $shortUrlIds
+     * $shortUrlIds === null means "every short url, no scope at all" — the
+     * whereIn clause is skipped entirely rather than filled with every id in
+     * the system, which would otherwise blow past PDO's 65,535 bound-
+     * parameter limit on a site with enough links (see issue #22).
+     * $shortUrlIds === [] means "explicitly nothing" and short-circuits to
+     * an empty result without querying.
+     *
+     * @param  array<int, int>|null  $shortUrlIds
      * @return array<string, mixed>
      */
-    public function aggregateMany(array $shortUrlIds, DateTimeInterface $from, DateTimeInterface $to): array;
+    public function aggregateMany(?array $shortUrlIds, DateTimeInterface $from, DateTimeInterface $to): array;
 
     /**
      * Deletes visit rows older than $before. When $tenantId is given, only

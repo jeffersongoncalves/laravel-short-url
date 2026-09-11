@@ -63,18 +63,24 @@ class ClickHouseVisitRepository implements VisitRepository
         return $this->runAggregate($range);
     }
 
-    public function aggregateMany(array $shortUrlIds, DateTimeInterface $from, DateTimeInterface $to): array
+    public function aggregateMany(?array $shortUrlIds, DateTimeInterface $from, DateTimeInterface $to): array
     {
         if ($shortUrlIds === []) {
             return $this->emptyResult();
         }
 
-        $range = sprintf(
-            "short_url_id IN (%s) AND visited_at BETWEEN '%s' AND '%s'",
-            implode(',', array_map('intval', $shortUrlIds)),
-            $from->format('Y-m-d H:i:s'),
-            $to->format('Y-m-d H:i:s'),
-        );
+        $range = $shortUrlIds === null
+            ? sprintf(
+                "visited_at BETWEEN '%s' AND '%s'",
+                $from->format('Y-m-d H:i:s'),
+                $to->format('Y-m-d H:i:s'),
+            )
+            : sprintf(
+                "short_url_id IN (%s) AND visited_at BETWEEN '%s' AND '%s'",
+                implode(',', array_map('intval', $shortUrlIds)),
+                $from->format('Y-m-d H:i:s'),
+                $to->format('Y-m-d H:i:s'),
+            );
 
         return $this->runAggregate($range);
     }
