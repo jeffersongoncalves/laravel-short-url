@@ -82,6 +82,7 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
         'create_short_url_folders_table',
         'create_short_url_tags_table',
         'create_short_url_utm_templates_table',
+        'add_date_led_indexes_to_short_url_visits_and_daily_stats_tables',
     ];
 
     public function configurePackage(Package $package): void
