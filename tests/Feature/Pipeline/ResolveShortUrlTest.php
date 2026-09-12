@@ -39,6 +39,19 @@ it('invalidates the cache when the short url is deleted', function () {
     expect(Cache::has(ResolveShortUrl::cacheKey('short.test', 'cache03')))->toBeFalse();
 });
 
+it('falls back to a direct lookup when the cache store throws', function () {
+    $shortUrl = ShortUrl::factory()->create(['url_key' => 'cache04']);
+
+    Cache::shouldReceive('remember')->once()->andThrow(new RuntimeException('Connection refused'));
+
+    $context = new RedirectContext(Request::create('http://short.test/cache04'), 'cache04');
+    $context->host = 'short.test';
+
+    $result = (new ResolveShortUrl)($context, fn (RedirectContext $c) => $c);
+
+    expect($result->shortUrl->is($shortUrl))->toBeTrue();
+});
+
 it('aborts with 404 when no short url matches the key', function () {
     $context = new RedirectContext(Request::create('http://short.test/missing'), 'missing');
     $context->host = 'short.test';

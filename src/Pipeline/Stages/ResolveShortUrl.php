@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Cache;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 use JeffersonGoncalves\LaravelShortUrl\Pipeline\RedirectContext;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Throwable;
 
 class ResolveShortUrl
 {
@@ -20,11 +21,7 @@ class ResolveShortUrl
         $customDomainId = $context->customDomain?->id;
 
         $shortUrl = config('short-url.cache.enabled', true)
-            ? Cache::remember(
-                static::cacheKey($context->host ?? '', $context->urlKey),
-                (int) config('short-url.cache.ttl', 3600),
-                fn () => $this->find($context->urlKey, $customDomainId)
-            )
+            ? $this->findCached($context->host ?? '', $context->urlKey, $customDomainId)
             : $this->find($context->urlKey, $customDomainId);
 
         if (! $shortUrl) {
@@ -55,6 +52,25 @@ class ResolveShortUrl
     protected function find(string $urlKey, ?int $customDomainId): ?ShortUrl
     {
         return ShortUrl::findByKey($urlKey, $customDomainId);
+    }
+
+    /**
+     * A cache outage must never break redirects — fall back to a direct
+     * lookup so a Redis blip degrades to uncached (slower), not a 500.
+     */
+    protected function findCached(string $host, string $urlKey, ?int $customDomainId): ?ShortUrl
+    {
+        try {
+            return Cache::remember(
+                static::cacheKey($host, $urlKey),
+                (int) config('short-url.cache.ttl', 3600),
+                fn () => $this->find($urlKey, $customDomainId)
+            );
+        } catch (Throwable $e) {
+            report($e);
+
+            return $this->find($urlKey, $customDomainId);
+        }
     }
 
     public static function cacheKey(string $host, string $urlKey): string
