@@ -179,7 +179,10 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
                 $schedule->command(SyncCountersCommand::class)->everyMinute();
             }
 
-            $schedule->command(AggregateAndPruneCommand::class)->dailyAt('02:00');
+            if (config('short-url.scheduling.aggregate_and_prune.enabled', true)) {
+                $schedule->command(AggregateAndPruneCommand::class)
+                    ->dailyAt(config('short-url.scheduling.aggregate_and_prune.time', '02:00'));
+            }
 
             if (config('short-url.domains.enabled', false)) {
                 $schedule->command(VerifyDomainsCommand::class)->cron('0 */6 * * *');
@@ -189,8 +192,13 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
                 $schedule->command(CheckSafeBrowsingCommand::class)->daily();
             }
 
-            $schedule->command(DetectAnomaliesCommand::class)->hourly();
-            $schedule->command(SendScheduledReportsCommand::class)->daily();
+            if (config('short-url.scheduling.detect_anomalies.enabled', true)) {
+                $schedule->command(DetectAnomaliesCommand::class)->hourly();
+            }
+
+            if (config('short-url.scheduling.send_scheduled_reports.enabled', true)) {
+                $schedule->command(SendScheduledReportsCommand::class)->daily();
+            }
         });
     }
 }

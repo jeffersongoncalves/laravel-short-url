@@ -271,7 +271,7 @@ All self-register with the scheduler (`packageBooted()`), respecting their confi
 | Command | Frequency |
 | --- | --- |
 | `short-url:sync-counters` | every minute (when counter buffering is on) |
-| `short-url:aggregate-and-prune` | daily at 02:00 |
+| `short-url:aggregate-and-prune` | daily at `scheduling.aggregate_and_prune.time` (default 02:00) |
 | `short-url:verify-domains` | every 6h |
 | `short-url:check-safe-browsing` | daily |
 | `short-url:detect-anomalies` | hourly |
@@ -279,6 +279,8 @@ All self-register with the scheduler (`packageBooted()`), respecting their confi
 | `short-url:import {driver} {source}` | manual |
 
 `aggregate-and-prune` prunes each tenant's visit rows against its own plan `retention_days` when multi-tenancy is enabled, falling back to the package-wide `short-url.tracking.retention_days` otherwise.
+
+`aggregate-and-prune`, `detect-anomalies`, and `send-scheduled-reports` run unconditionally by default (unlike the others, which are already gated behind a feature toggle) but can each be turned off — e.g. to run them from a different process, or on a different schedule — via `short-url.scheduling.{command}.enabled` (`SHORT_URL_SCHEDULE_AGGREGATE_AND_PRUNE`, `SHORT_URL_SCHEDULE_DETECT_ANOMALIES`, `SHORT_URL_SCHEDULE_SEND_SCHEDULED_REPORTS`). `aggregate-and-prune`'s time is also configurable via `short-url.scheduling.aggregate_and_prune.time` (`SHORT_URL_SCHEDULE_AGGREGATE_AND_PRUNE_TIME`).
 
 ## Public surface (contract with the UI plugin)
 

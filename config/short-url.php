@@ -357,6 +357,31 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Scheduling
+    |--------------------------------------------------------------------------
+    |
+    | Toggles for the commands this package registers on the scheduler by
+    | itself (see LaravelShortUrlServiceProvider::boot()). Disable one when
+    | a host app wants a different time/frequency, its own overlap/queue
+    | handling, or to run the command from a separate process entirely —
+    | otherwise the package's own copy keeps firing alongside it.
+    |
+    */
+    'scheduling' => [
+        'aggregate_and_prune' => [
+            'enabled' => env('SHORT_URL_SCHEDULE_AGGREGATE_AND_PRUNE', true),
+            'time' => env('SHORT_URL_SCHEDULE_AGGREGATE_AND_PRUNE_TIME', '02:00'),
+        ],
+        'detect_anomalies' => [
+            'enabled' => env('SHORT_URL_SCHEDULE_DETECT_ANOMALIES', true),
+        ],
+        'send_scheduled_reports' => [
+            'enabled' => env('SHORT_URL_SCHEDULE_SEND_SCHEDULED_REPORTS', true),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Notifications
     |--------------------------------------------------------------------------
     |
