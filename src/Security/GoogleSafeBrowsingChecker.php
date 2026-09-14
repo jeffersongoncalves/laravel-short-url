@@ -2,7 +2,9 @@
 
 namespace JeffersonGoncalves\LaravelShortUrl\Security;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\SafeBrowsingChecker;
 use JeffersonGoncalves\LaravelShortUrl\Data\SafetyResult;
 use Throwable;
@@ -25,7 +27,10 @@ class GoogleSafeBrowsingChecker implements SafeBrowsingChecker
         }
 
         try {
-            $response = Http::timeout(3)->post(self::ENDPOINT.'?key='.$apiKey, [
+            // connectTimeout separate from the total timeout so a DNS/connect
+            // hiccup alone can't eat the whole budget before the API call
+            // even starts; one quick retry absorbs the transient case.
+            $response = Http::connectTimeout(2)->timeout(5)->retry(1, 100)->post(self::ENDPOINT.'?key='.$apiKey, [
                 'client' => [
                     'clientId' => 'laravel-short-url',
                     'clientVersion' => '1.0.0',
@@ -54,6 +59,16 @@ class GoogleSafeBrowsingChecker implements SafeBrowsingChecker
             )));
 
             return new SafetyResult('unsafe', now(), $threats);
+        } catch (ConnectionException $e) {
+            // DNS/connect/timeout failures are an expected degraded path
+            // (see class docblock) — logged, not reported, so they don't
+            // page on something the code already handles gracefully.
+            Log::info('Safe Browsing check unreachable, falling back to unknown.', [
+                'url' => $url,
+                'exception' => $e->getMessage(),
+            ]);
+
+            return new SafetyResult('unknown', now());
         } catch (Throwable $e) {
             report($e);
 
