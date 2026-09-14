@@ -28,4 +28,9 @@ class CustomDomainFactory extends Factory
     {
         return $this->state(['is_verified' => true, 'verified_at' => now()]);
     }
+
+    public function default(): static
+    {
+        return $this->state(['is_default' => true]);
+    }
 }

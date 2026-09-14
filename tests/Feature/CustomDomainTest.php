@@ -34,3 +34,24 @@ it('generates a verification token automatically', function () {
 
     expect($domain->verification_token)->not->toBeNull();
 });
+
+it('unsets the previous default domain when a new one is marked default', function () {
+    $first = CustomDomain::factory()->default()->create();
+    $second = CustomDomain::factory()->default()->create();
+
+    expect($first->refresh()->is_default)->toBeFalse()
+        ->and($second->refresh()->is_default)->toBeTrue();
+});
+
+it('resolves the default domain', function () {
+    CustomDomain::factory()->verified()->create();
+    $default = CustomDomain::factory()->verified()->default()->create();
+
+    expect(CustomDomain::default()?->id)->toBe($default->id);
+});
+
+it('ignores an unverified default domain', function () {
+    CustomDomain::factory()->default()->create(['is_verified' => false]);
+
+    expect(CustomDomain::default())->toBeNull();
+});

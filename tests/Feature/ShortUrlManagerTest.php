@@ -97,3 +97,22 @@ it('resolves a key scoped to the custom domain matching the given host', functio
 
     expect($resolved?->id)->toBe($onDomain->id);
 });
+
+it('falls back to the default domain when custom_domain_id is omitted', function () {
+    $default = CustomDomain::factory()->verified()->default()->create();
+
+    $shortUrl = app(ShortUrlManager::class)->create(['destination_url' => 'https://example.com']);
+
+    expect($shortUrl->custom_domain_id)->toBe($default->id);
+});
+
+it('keeps an explicit null custom_domain_id instead of the default domain', function () {
+    CustomDomain::factory()->verified()->default()->create();
+
+    $shortUrl = app(ShortUrlManager::class)->create([
+        'destination_url' => 'https://example.com',
+        'custom_domain_id' => null,
+    ]);
+
+    expect($shortUrl->custom_domain_id)->toBe(0);
+});

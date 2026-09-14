@@ -87,6 +87,7 @@ class LaravelShortUrlServiceProvider extends PackageServiceProvider
         'create_short_url_tags_table',
         'create_short_url_utm_templates_table',
         'update_short_url_visits_and_daily_stats_tables_indexes',
+        'update_short_url_custom_domains_table_add_is_default',
     ];
 
     public function configurePackage(Package $package): void
