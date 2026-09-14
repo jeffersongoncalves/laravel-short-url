@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.2.1](https://github.com/jeffersongoncalves/laravel-short-url/compare/5.2.0...5.2.1) - 2026-09-14
+
+### What's Changed
+
+* fix: separate connect timeout from total timeout in Safe Browsing check by @jeffersongoncalves in https://github.com/jeffersongoncalves/laravel-short-url/pull/30
+
+**Full Changelog**: https://github.com/jeffersongoncalves/laravel-short-url/compare/5.2.0...5.2.1
+
 ## [5.2.0](https://github.com/jeffersongoncalves/laravel-short-url/compare/5.1.0...5.2.0) - 2026-09-14
 
 ### What's Changed
@@ -153,6 +161,7 @@ ALTER TABLE short_url_pixels ALTER COLUMN config TYPE jsonb USING config::jsonb;
 
 
 
+
 ```
 Repeat per affected column/table above.
 
@@ -212,6 +221,7 @@ public function register(): void
 
 
 
+
 ```
 See the README's "Multi-tenancy without stancl/tenancy" section for the full walkthrough.
 
@@ -248,6 +258,7 @@ SHORT_URL_TRUST_CDN_HEADERS=true
 
 
 
+
 ```
 to keep getting geo data (only do this if your app is only reachable through the trusted edge/CDN injecting those headers).
 
@@ -266,6 +277,7 @@ If you rely on the old explicit-route behavior (e.g. you know for certain no app
 
 ```env
 SHORT_URL_ROUTE_FALLBACK=false
+
 
 
 
