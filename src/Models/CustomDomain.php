@@ -15,6 +15,7 @@ use JeffersonGoncalves\LaravelShortUrl\Tenancy\BelongsToTenant;
  * @property int|null $tenant_id
  * @property string $domain
  * @property bool $is_wildcard
+ * @property bool $is_default
  * @property string $verification_token
  * @property bool $is_verified
  * @property Carbon|null $verified_at
@@ -35,6 +36,7 @@ class CustomDomain extends Model
     {
         return [
             'is_wildcard' => 'boolean',
+            'is_default' => 'boolean',
             'is_verified' => 'boolean',
             'verified_at' => 'datetime',
             'last_checked_at' => 'datetime',
@@ -66,6 +68,23 @@ class CustomDomain extends Model
     public function scopeActive(Builder $query): void
     {
         $query->where('is_verified', true)->whereNull('disabled_at');
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     */
+    public function scopeDefault(Builder $query): void
+    {
+        $query->where('is_default', true);
+    }
+
+    /**
+     * The tenant's default domain — the one new short URLs fall back to
+     * when the caller doesn't pick one explicitly. See ShortUrlManager::create().
+     */
+    public static function default(): ?self
+    {
+        return static::query()->active()->default()->first();
     }
 
     /**

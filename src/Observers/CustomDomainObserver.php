@@ -13,6 +13,23 @@ class CustomDomainObserver
         app(PlanLimits::class)->assertCanCreateDomain();
     }
 
+    /**
+     * At most one default domain per tenant — marking one default unsets
+     * every other default the same tenant has.
+     */
+    public function saving(CustomDomain $domain): void
+    {
+        if (! $domain->is_default || ! $domain->isDirty('is_default')) {
+            return;
+        }
+
+        CustomDomain::query()
+            ->withoutGlobalScopes()
+            ->where('tenant_id', $domain->tenant_id)
+            ->when($domain->exists, fn ($query) => $query->whereKeyNot($domain->getKey()))
+            ->update(['is_default' => false]);
+    }
+
     public function saved(CustomDomain $domain): void
     {
         $this->flush($domain);

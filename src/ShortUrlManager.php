@@ -27,11 +27,17 @@ class ShortUrlManager
     {
         app(PlanLimits::class)->assertCanCreateLink();
 
-        // custom_domain_id is NOT NULL (sentinel 0 = no custom domain) —
-        // coerce an explicit null the same way an omitted key already
-        // resolves, so callers can pass either without hitting a NOT NULL
-        // constraint violation.
-        if (array_key_exists('custom_domain_id', $attributes) && $attributes['custom_domain_id'] === null) {
+        // custom_domain_id is NOT NULL (sentinel 0 = no custom domain). An
+        // omitted key falls back to the tenant's default domain, if any;
+        // an explicit null is a caller's deliberate "no domain" and is
+        // coerced to the sentinel instead, same as before.
+        if (! array_key_exists('custom_domain_id', $attributes)) {
+            // ->getKey() rather than ->id: Larastan's DB-inferred "id"
+            // property type drops the null branch through a nullsafe
+            // fetch, a known false positive (nullsafe.neverNull) — the
+            // real-method accessor composes correctly instead.
+            $attributes['custom_domain_id'] = CustomDomain::default()?->getKey() ?? 0;
+        } elseif ($attributes['custom_domain_id'] === null) {
             $attributes['custom_domain_id'] = 0;
         }
 
