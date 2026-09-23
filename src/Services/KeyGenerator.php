@@ -4,6 +4,7 @@ namespace JeffersonGoncalves\LaravelShortUrl\Services;
 
 use Illuminate\Support\Str;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
+use JeffersonGoncalves\LaravelShortUrl\Settings\Setting;
 use RuntimeException;
 
 class KeyGenerator
@@ -15,7 +16,7 @@ class KeyGenerator
      */
     public function generate(?int $customDomainId = null, ?int $length = null): string
     {
-        $length ??= (int) config('short-url.key.length', 7);
+        $length ??= Setting::int('key.length', 7);
         $blacklist = array_map('strtolower', (array) config('short-url.key.blacklist', []));
 
         for ($attempt = 1; $attempt <= self::MAX_ATTEMPTS; $attempt++) {

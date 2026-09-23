@@ -7,6 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 use JeffersonGoncalves\LaravelShortUrl\Pipeline\RedirectContext;
+use JeffersonGoncalves\LaravelShortUrl\Settings\Setting;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
 
@@ -63,7 +64,7 @@ class ResolveShortUrl
         try {
             return Cache::remember(
                 static::cacheKey($host, $urlKey),
-                (int) config('short-url.cache.ttl', 3600),
+                Setting::int('cache.ttl', 3600),
                 fn () => $this->find($urlKey, $customDomainId)
             );
         } catch (Throwable $e) {

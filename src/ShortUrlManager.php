@@ -8,6 +8,7 @@ use JeffersonGoncalves\LaravelShortUrl\Models\CustomDomain;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl as ShortUrlModel;
 use JeffersonGoncalves\LaravelShortUrl\Models\UtmTemplate;
 use JeffersonGoncalves\LaravelShortUrl\Services\KeyGenerator;
+use JeffersonGoncalves\LaravelShortUrl\Settings\Setting;
 use JeffersonGoncalves\LaravelShortUrl\Tenancy\PlanLimits;
 use JeffersonGoncalves\LaravelShortUrl\Tenancy\TenantContext;
 use Throwable;
@@ -48,7 +49,7 @@ class ShortUrlManager
 
         $attributes += [
             'is_enabled' => true,
-            'redirect_status_code' => (int) config('short-url.redirect.default_status_code', 302),
+            'redirect_status_code' => Setting::int('redirect.default_status_code', 302),
             'forward_query_params' => true,
             'destination_type' => 'single',
         ];
@@ -165,7 +166,7 @@ class ShortUrlManager
         }
 
         if ($cacheEnabled && $toCache !== []) {
-            Cache::putMany($toCache, (int) config('short-url.cache.ttl', 3600));
+            Cache::putMany($toCache, Setting::int('cache.ttl', 3600));
         }
 
         return $results;

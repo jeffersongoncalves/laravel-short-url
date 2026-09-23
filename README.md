@@ -192,6 +192,8 @@ Every option is documented inline in `config/short-url.php`. Main groups:
 
 Settings can also be read/written at runtime via `Contracts\SettingsRepository`, with a declarative schema (`schema()`) for building dynamic forms in the UI plugin.
 
+`redirect.default_status_code`, `key.length` and `cache.ttl` are applied at runtime: a stored setting wins, otherwise the config value (including `.env` overrides) is used. Changing the status code or key length only affects links created afterwards — existing links keep their own `redirect_status_code` and key. The TTL used to cache the settings themselves always comes from config.
+
 Device/browser/OS parsing, bot detection, IP anonymization, GeoIP resolution, and VPN/proxy/Tor detection are provided by [`jeffersongoncalves/laravel-visitor-fingerprint`](https://github.com/jeffersongoncalves/laravel-visitor-fingerprint) — configure those via its own `config/visitor-fingerprint.php` (`geoip.driver`, `vpn_detection.driver`, `hash_salt`, ...), not `short-url.tracking.*`. `short-url.security.vpn_detection.mode` (off/flag/block) stays here since it's this package's own enforcement policy.
 
 ### Multi-tenancy without stancl/tenancy
