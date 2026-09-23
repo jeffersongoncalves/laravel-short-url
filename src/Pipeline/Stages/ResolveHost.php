@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Cache;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\CustomDomainResolver;
 use JeffersonGoncalves\LaravelShortUrl\Models\CustomDomain;
 use JeffersonGoncalves\LaravelShortUrl\Pipeline\RedirectContext;
+use JeffersonGoncalves\LaravelShortUrl\Settings\Setting;
 
 class ResolveHost
 {
@@ -33,7 +34,7 @@ class ResolveHost
 
         return Cache::remember(
             config('short-url.cache.prefix', 'short_url').":domain:{$host}",
-            (int) config('short-url.cache.ttl', 3600),
+            Setting::int('cache.ttl', 3600),
             fn () => CustomDomain::forHost($host)
         );
     }

@@ -13,15 +13,15 @@ class DatabaseSettingsRepository implements SettingsRepository
 
     public function get(string $key, mixed $default = null): mixed
     {
-        if (! config('short-url.cache.enabled', true)) {
-            return $this->read($key, $default);
-        }
+        // Only the stored row is cached, wrapped so a miss is cached too —
+        // never the caller's default, which would otherwise outlive a
+        // config change and leak across callers passing different defaults.
+        // cache.ttl stays config-only here: reading it through get() would be circular.
+        $row = config('short-url.cache.enabled', true)
+            ? Cache::remember($this->cacheKey($key), (int) config('short-url.cache.ttl', 3600), fn () => $this->read($key))
+            : $this->read($key);
 
-        return Cache::remember(
-            $this->cacheKey($key),
-            (int) config('short-url.cache.ttl', 3600),
-            fn () => $this->read($key, $default)
-        );
+        return array_key_exists('value', $row) ? $row['value'] : $default;
     }
 
     public function set(string $key, mixed $value): void
@@ -61,21 +61,21 @@ class DatabaseSettingsRepository implements SettingsRepository
         return [
             'redirect.default_status_code' => [
                 'type' => 'integer',
-                'default' => 302,
+                'default' => (int) config('short-url.redirect.default_status_code', 302),
                 'label' => trans('short-url::settings.redirect_status_code'),
                 'group' => 'redirect',
                 'rules' => ['integer', 'in:301,302,307,308'],
             ],
             'key.length' => [
                 'type' => 'integer',
-                'default' => 7,
+                'default' => (int) config('short-url.key.length', 7),
                 'label' => trans('short-url::settings.key_length'),
                 'group' => 'keys',
                 'rules' => ['integer', 'min:4', 'max:32'],
             ],
             'cache.ttl' => [
                 'type' => 'integer',
-                'default' => 3600,
+                'default' => (int) config('short-url.cache.ttl', 3600),
                 'label' => trans('short-url::settings.cache_ttl'),
                 'group' => 'cache',
                 'rules' => ['integer', 'min:0'],
@@ -83,11 +83,14 @@ class DatabaseSettingsRepository implements SettingsRepository
         ];
     }
 
-    protected function read(string $key, mixed $default): mixed
+    /**
+     * @return array{value?: mixed}
+     */
+    protected function read(string $key): array
     {
         $row = DB::table($this->table())->where('key', $this->scopedKey($key))->first();
 
-        return $row ? json_decode((string) $row->value, true) : $default;
+        return $row ? ['value' => json_decode((string) $row->value, true)] : [];
     }
 
     protected function table(): string
@@ -109,6 +112,7 @@ class DatabaseSettingsRepository implements SettingsRepository
 
     protected function cacheKey(string $key): string
     {
-        return config('short-url.cache.prefix', 'short_url').':settings:'.$this->scopedKey($key);
+        // "settings.v2": entries now hold the wrapped row, not the raw value.
+        return config('short-url.cache.prefix', 'short_url').':settings.v2:'.$this->scopedKey($key);
     }
 }
