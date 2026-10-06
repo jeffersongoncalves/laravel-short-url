@@ -42,4 +42,4 @@ Run all three (`test`, `analyse`, `format`) before considering a change done —
 
 ## Commit style
 
-Conventional commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`, `ci:`), English, explaining *why* over *what*. Primary branch is `master`.
+Conventional commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`, `ci:`), English, explaining *why* over *what*. Primary branch is `main`.
