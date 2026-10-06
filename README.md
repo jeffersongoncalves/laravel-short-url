@@ -1,6 +1,6 @@
 <div class="filament-hidden">
 
-![Laravel Short URL](https://raw.githubusercontent.com/jeffersongoncalves/laravel-short-url/master/art/jeffersongoncalves-laravel-short-url.png)
+![Laravel Short URL](https://raw.githubusercontent.com/jeffersongoncalves/laravel-short-url/main/art/jeffersongoncalves-laravel-short-url.png)
 
 </div>
 
@@ -9,7 +9,7 @@
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-FFDD00?style=flat-square&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/jeffersongoncalves)
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/jeffersongoncalves/laravel-short-url.svg?style=flat-square)](https://packagist.org/packages/jeffersongoncalves/laravel-short-url)
-[![Tests](https://img.shields.io/github/actions/workflow/status/jeffersongoncalves/laravel-short-url/tests.yml?branch=master&label=tests&style=flat-square)](https://github.com/jeffersongoncalves/laravel-short-url/actions/workflows/tests.yml)
+[![Tests](https://img.shields.io/github/actions/workflow/status/jeffersongoncalves/laravel-short-url/tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/jeffersongoncalves/laravel-short-url/actions/workflows/tests.yml)
 [![Total Downloads](https://img.shields.io/packagist/dt/jeffersongoncalves/laravel-short-url.svg?style=flat-square)](https://packagist.org/packages/jeffersongoncalves/laravel-short-url)
 
 Headless URL-shortening engine for Laravel. Zero dependency on Filament — works standalone in any Laravel app via its Facade or console commands.
