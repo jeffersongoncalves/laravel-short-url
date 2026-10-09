@@ -18,7 +18,11 @@ $router->group(function (): void {
     Route::post('/{urlKey}/unlock', UnlockController::class)->name('short-url.unlock');
 
     if (config('short-url.route.fallback', false)) {
-        Route::fallback(RedirectController::class)->name('short-url.redirect');
+        // Verb-agnostic fallback: a GET-only fallback would turn every unmatched non-GET request into a 405.
+        Route::any('{fallbackPlaceholder}', RedirectController::class)
+            ->where('fallbackPlaceholder', '.*')
+            ->fallback()
+            ->name('short-url.redirect');
     } else {
         Route::get('/{urlKey}', RedirectController::class)->name('short-url.redirect');
     }
