@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Http\Request;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 
 it('redirects using the fallback route when enabled', function () {
@@ -18,6 +19,12 @@ it('still returns 404 for a missing key via the fallback route', function () {
 it('returns 404 instead of 405 for unmatched non-GET requests', function (string $method) {
     $this->call($method, 'http://short.test/api/foo/bar')->assertNotFound();
 })->with(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+it('runs no middleware for unmatched non-GET requests so CSRF cannot answer 419', function () {
+    $route = app('router')->getRoutes()->match(Request::create('http://short.test/api/foo/bar', 'POST'));
+
+    expect($route->gatherMiddleware())->toBe([]);
+});
 
 it('returns 404 for non-GET requests to an existing short url key', function () {
     ShortUrl::factory()->create(['url_key' => 'fb67890']);
