@@ -23,7 +23,7 @@ Route::group($attributes, function (): void {
     if (config('short-url.route.fallback', false)) {
         // The GET-only fallback above would turn every unmatched non-GET request into a 405.
         // This one catches them first and 404s; no middleware, so CSRF/session never run (419).
-        Route::match(['POST', 'PUT', 'PATCH', 'DELETE'], '{fallbackPlaceholder}', RedirectController::class)
+        Route::match(['POST', 'PUT', 'PATCH', 'DELETE'], '{fallbackPlaceholder}', fn () => abort(404))
             ->where('fallbackPlaceholder', '.*')
             ->fallback();
     }

@@ -20,6 +20,10 @@ it('returns 404 instead of 405 for unmatched non-GET requests', function (string
     $this->call($method, 'http://short.test/api/foo/bar')->assertNotFound();
 })->with(['POST', 'PUT', 'PATCH', 'DELETE']);
 
+it('returns 404 for requests to the root path', function (string $method) {
+    $this->call($method, 'http://short.test/')->assertNotFound();
+})->with(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
+
 it('runs no middleware for unmatched non-GET requests so CSRF cannot answer 419', function () {
     $route = app('router')->getRoutes()->match(Request::create('http://short.test/api/foo/bar', 'POST'));
 
