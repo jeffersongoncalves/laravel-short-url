@@ -4,11 +4,13 @@ namespace JeffersonGoncalves\LaravelShortUrl\Tests;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use JeffersonGoncalves\LaravelShortUrl\LaravelShortUrlServiceProvider;
+use JeffersonGoncalves\PestPluginDatabaseMigrations\LoadsPackageMigrations;
 use JeffersonGoncalves\VisitorFingerprint\VisitorFingerprintServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra
 {
+    use LoadsPackageMigrations;
     use RefreshDatabase;
 
     protected function getPackageProviders($app): array
@@ -60,29 +62,6 @@ abstract class TestCase extends Orchestra
 
     protected function defineDatabaseMigrations(): void
     {
-        $stubsPath = __DIR__.'/../database/migrations';
-        $tempPath = sys_get_temp_dir().'/laravel-short-url-migrations';
-
-        if (! is_dir($tempPath)) {
-            mkdir($tempPath, 0755, true);
-        }
-
-        // Wipe leftovers from a previous run/naming scheme — loadMigrationsFrom()
-        // below loads every file in this directory, stale or not.
-        foreach (glob($tempPath.'/*.php') as $leftover) {
-            unlink($leftover);
-        }
-
-        // Numeric prefixes reproduce LaravelShortUrlServiceProvider::MIGRATIONS
-        // order — plain stub filenames would sort alphabetically instead and
-        // break on any database that enforces foreign keys strictly (MySQL,
-        // Postgres) if a dependent table sorted before what it references.
-        foreach (LaravelShortUrlServiceProvider::MIGRATIONS as $index => $migration) {
-            $stub = $stubsPath.'/'.$migration.'.php.stub';
-            $prefix = str_pad((string) $index, 4, '0', STR_PAD_LEFT);
-            copy($stub, $tempPath.'/'.$prefix.'_'.$migration.'.php');
-        }
-
-        $this->loadMigrationsFrom($tempPath);
+        $this->loadPackageMigrations(LaravelShortUrlServiceProvider::class);
     }
 }
