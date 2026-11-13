@@ -5,6 +5,7 @@ namespace JeffersonGoncalves\LaravelShortUrl\Repositories;
 use DateTimeInterface;
 use Illuminate\Support\Facades\Http;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\VisitRepository;
+use JeffersonGoncalves\LaravelShortUrl\Tenancy\TenantContext;
 use RuntimeException;
 
 /**
@@ -81,6 +82,10 @@ class ClickHouseVisitRepository implements VisitRepository
                 $from->format('Y-m-d H:i:s'),
                 $to->format('Y-m-d H:i:s'),
             );
+
+        if ($shortUrlIds === null && ($tenantId = app(TenantContext::class)->currentId()) !== null) {
+            $range .= ' AND tenant_id = '.$this->quoteValue($tenantId);
+        }
 
         return $this->runAggregate($range);
     }

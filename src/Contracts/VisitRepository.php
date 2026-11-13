@@ -29,10 +29,12 @@ interface VisitRepository
      * belong in the set via ShortUrl's own (already tenant-scoped) Eloquent
      * query; this only does the aggregation math, never link selection.
      *
-     * $shortUrlIds === null means "every short url, no scope at all" — the
-     * whereIn clause is skipped entirely rather than filled with every id in
-     * the system, which would otherwise blow past PDO's 65,535 bound-
-     * parameter limit on a site with enough links (see issue #22).
+     * $shortUrlIds === null means "every short url of the current tenant"
+     * (or the whole site when no tenant resolves) — the whereIn clause is
+     * skipped entirely rather than filled with every id in the system, which
+     * would otherwise blow past PDO's 65,535 bound-parameter limit on a site
+     * with enough links (see issue #22); a current tenant filters by
+     * tenant_id instead (see issue #48).
      * $shortUrlIds === [] means "explicitly nothing" and short-circuits to
      * an empty result without querying.
      *

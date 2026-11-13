@@ -10,6 +10,7 @@ use JeffersonGoncalves\LaravelShortUrl\Contracts\VisitRepository;
 use JeffersonGoncalves\LaravelShortUrl\Data\StatsPayload;
 use JeffersonGoncalves\LaravelShortUrl\Models\ShortUrl;
 use JeffersonGoncalves\LaravelShortUrl\Targeting\SignificanceCalculator;
+use JeffersonGoncalves\LaravelShortUrl\Tenancy\TenantContext;
 use RuntimeException;
 
 /**
@@ -133,6 +134,13 @@ class EloquentStatsAggregator implements StatsAggregator
             ->when(
                 ! $this->shortUrl && $this->shortUrlIds !== null,
                 fn ($query) => $query->whereIn('short_url_id', $this->shortUrlIds ?: [0]),
+            )
+            // daily_stats has no tenant_id: with a current tenant, "no scope"
+            // means every link of that tenant (subquery, no bound ids — #48).
+            // withTrashed keeps deleted links' history, as the untenanted path does.
+            ->when(
+                ! $this->shortUrl && $this->shortUrlIds === null && app(TenantContext::class)->currentId() !== null,
+                fn ($query) => $query->whereIn('short_url_id', ShortUrl::withTrashed()->select('id')),
             )
             ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
             ->get();

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use JeffersonGoncalves\LaravelShortUrl\Contracts\VisitRepository;
 use JeffersonGoncalves\LaravelShortUrl\Models\Visit;
+use JeffersonGoncalves\LaravelShortUrl\Tenancy\TenantContext;
 
 class EloquentVisitRepository implements VisitRepository
 {
@@ -57,9 +58,12 @@ class EloquentVisitRepository implements VisitRepository
             return $this->emptyResult();
         }
 
+        $tenantId = $shortUrlIds === null ? app(TenantContext::class)->currentId() : null;
+
         return $this->runAggregate(
             Visit::query()
                 ->when($shortUrlIds !== null, fn ($query) => $query->whereIn('short_url_id', $shortUrlIds))
+                ->when($tenantId !== null, fn ($query) => $query->where('tenant_id', $tenantId))
                 ->whereBetween('visited_at', [$from, $to])
         );
     }
