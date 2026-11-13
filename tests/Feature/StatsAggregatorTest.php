@@ -133,3 +133,71 @@ it('aggregates across every short url via forShortUrls(null) without a whereIn(a
 
     expect($payload->totalVisits)->toBe(5);
 });
+
+function seedTwoTenantsStats(): void
+{
+    $prefix = config('short-url.table_prefix', 'short_url_');
+    $empty = json_encode([]);
+
+    foreach ([1 => 4, 2 => 10] as $tenantId => $historical) {
+        $link = ShortUrl::factory()->create(['tenant_id' => $tenantId]);
+
+        DB::table($prefix.'daily_stats')->insert([
+            'short_url_id' => $link->id,
+            'date' => now()->subDay()->toDateString(),
+            'visits_count' => $historical,
+            'unique_visits_count' => $historical,
+            'bot_visits_count' => 0,
+            'device_stats' => $empty, 'browser_stats' => $empty, 'os_stats' => $empty,
+            'country_stats' => $empty, 'city_stats' => $empty, 'referer_stats' => $empty,
+            'referer_type_stats' => $empty, 'utm_source_stats' => $empty, 'utm_medium_stats' => $empty,
+            'utm_campaign_stats' => json_encode(["camp-{$tenantId}" => $historical]),
+            'language_stats' => $empty, 'variant_stats' => $empty, 'hourly_stats' => $empty,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        Visit::query()->create([
+            'short_url_id' => $link->id, 'tenant_id' => $tenantId, 'visited_at' => now(),
+            'is_bot' => false, 'ip_hash' => "t{$tenantId}", 'created_at' => now(),
+        ]);
+    }
+}
+
+it('scopes forShortUrls(null) to the current tenant when tenancy is enabled', function () {
+    config(['short-url.tenancy.enabled' => false]);
+    seedTwoTenantsStats();
+    config(['short-url.tenancy.enabled' => true, 'short-url.tenancy.current_tenant_id' => 1]);
+
+    $payload = app(StatsAggregator::class)
+        ->forShortUrls(null)
+        ->between(now()->subDays(2), now())
+        ->get();
+
+    expect($payload->totalVisits)->toBe(5)
+        ->and($payload->utmCampaignStats)->toBe(['camp-1' => 4]);
+});
+
+it('scopes live-only forShortUrls(null) visits to the current tenant', function () {
+    config(['short-url.tenancy.enabled' => false]);
+    seedTwoTenantsStats();
+    config(['short-url.tenancy.enabled' => true, 'short-url.tenancy.current_tenant_id' => 2]);
+
+    $payload = app(StatsAggregator::class)
+        ->forShortUrls(null)
+        ->between(now()->startOfDay(), now())
+        ->get();
+
+    expect($payload->totalVisits)->toBe(1);
+});
+
+it('keeps forShortUrls(null) site-wide when tenancy is disabled', function () {
+    config(['short-url.tenancy.enabled' => false]);
+    seedTwoTenantsStats();
+
+    $payload = app(StatsAggregator::class)
+        ->forShortUrls(null)
+        ->between(now()->subDays(2), now())
+        ->get();
+
+    expect($payload->totalVisits)->toBe(16);
+});
