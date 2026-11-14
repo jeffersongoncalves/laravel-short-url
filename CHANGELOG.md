@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.3.0](https://github.com/jeffersongoncalves/laravel-short-url/compare/5.2.6...5.3.0) - 2026-11-13
+
+Behavior change for multi-tenant installs (#48): with tenancy enabled and a current tenant, StatsAggregator::forShortUrls(null) and VisitRepository::aggregateMany(null) now aggregate only that tenant's links instead of every tenant's. Historical daily_stats are filtered via a tenant-scoped subquery (no bound ids), live visits via tenant_id, in both the Eloquent and ClickHouse repositories. With tenancy disabled or no current tenant, null keeps its site-wide meaning. Same code as 5.2.6, released as a minor version because of the behavior change.
+
 ## [5.2.6](https://github.com/jeffersongoncalves/laravel-short-url/compare/5.2.5...5.2.6) - 2026-11-13
 
 Fixes #48: with tenancy enabled, StatsAggregator::forShortUrls(null) now aggregates only the current tenant's links — historical daily_stats via a tenant-scoped subquery (no bound ids) and live visits via tenant_id, in both the Eloquent and ClickHouse repositories. With tenancy disabled or no current tenant, null keeps its site-wide meaning.
@@ -190,6 +194,7 @@ ALTER TABLE short_url_pixels ALTER COLUMN config TYPE jsonb USING config::jsonb;
 
 
 
+
 ```
 Repeat per affected column/table above.
 
@@ -254,6 +259,7 @@ public function register(): void
 
 
 
+
 ```
 See the README's "Multi-tenancy without stancl/tenancy" section for the full walkthrough.
 
@@ -295,6 +301,7 @@ SHORT_URL_TRUST_CDN_HEADERS=true
 
 
 
+
 ```
 to keep getting geo data (only do this if your app is only reachable through the trusted edge/CDN injecting those headers).
 
@@ -313,6 +320,7 @@ If you rely on the old explicit-route behavior (e.g. you know for certain no app
 
 ```env
 SHORT_URL_ROUTE_FALLBACK=false
+
 
 
 
